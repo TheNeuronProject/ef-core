@@ -37,9 +37,9 @@ switch (process.env.BUILD_ENV) {
 
 module.exports = {
 	moduleName: 'ef',
-	entry: 'src/ef.js',
-	devDest: 'test/ef.dev.js',
-	proDest: 'dist/ef.min.js',
+	entry: 'src/ef-core.js',
+	devDest: 'test/ef-core.dev.js',
+	proDest: 'dist/ef-core.min.js',
 	format: 'umd',
 	sourceMap: true,
 	plugins: [

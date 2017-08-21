@@ -1,4 +1,4 @@
-var template = '\n' +
+var template = parseEft('\n' +
 '>div.{{class.text = box test}}\n' +
 '	#testattr\n' +
 ' #emptyattr = {{empty}}\n' +
@@ -56,9 +56,9 @@ var template = '\n' +
 '	>button\n' +
 '		@click = sendMsg:some data\n' +
 '		.{{btnText = sendMsg}}\n' +
-'	+list'
+'	+list')
 
-var template2 = '  this is a comment\n' +
+var template2 = parseEft('  this is a comment\n' +
 '  >div.{{class = some class name}}\n' +
 '    #style = {{attr.style}}\n' +
 '    #id = testdiv\n' +
@@ -78,7 +78,7 @@ var template2 = '  this is a comment\n' +
 '  	  	.Notice: {{notice = ]]}}\n' +
 '  		. test\n' +
 '  		-node2\n' +
-'  		+list1'
+'  		+list1')
 
 var data1 = {
 	$data: {

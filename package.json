@@ -1,9 +1,9 @@
 {
-  "name": "ef.js",
-  "version": "0.3.5-beta.2",
-  "description": "(maybe) An elegant HTML template engine & basic framework",
-  "main": "dist/ef.min.js",
-  "module": "src/ef.js",
+  "name": "ef-core",
+  "version": "0.4.0-beta.1",
+  "description": "Core of ef.js (without parser)",
+  "main": "dist/ef-core.min.js",
+  "module": "src/ef-core.js",
   "scripts": {
     "dev": "node ./build/dev-server.js",
     "build": "node ./build/build.js",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TheNeuronProject/ef.js.git"
+    "url": "git+https://github.com/TheNeuronProject/ef-core.git"
   },
   "keywords": [
     "template",
@@ -22,7 +22,7 @@
   "author": "ClassicOldSong",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/TheNeuronProject/ef.js/issues"
+    "url": "https://github.com/TheNeuronProject/ef-core/issues"
   },
   "homepage": "https://ef.js.org",
   "devDependencies": {
@@ -39,8 +39,5 @@
     "rollup-plugin-replace": "^1.1.1",
     "rollup-plugin-uglify": "^2.0.1",
     "shelljs": "^0.7.8"
-  },
-  "dependencies": {
-    "eft-parser": "^0.5.10"
   }
 }
