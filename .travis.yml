@@ -5,24 +5,24 @@ node_js:
 env:
 - BUILD_ENV=CI
 cache:
-	directories:
-	- node_modules
+  directories:
+  - node_modules
 notifications:
-	webhooks: https://fathomless-fjord-24024.herokuapp.com/notify
+  webhooks: https://fathomless-fjord-24024.herokuapp.com/notify
 deploy:
 - provider: releases
-	api_key:
-		secure: E5mAk0LRw+DoIhtW+RAUHNYbubaQAGprHRIZm5ArneZTtqlOBGzMBzXRcEKzFUrHqaXR076gKPLEXJEfJz5rIIi4Qr7P6rRy73R+bu507Vs1+HDwWXQb2CTwoj5m6i6Ts7RYoHyT4O3Z8v2OuZhzlXbn7hzzOxM4f1LZEcxynUK2dmZzOx+popU0H4x6Bl52DBFsM1K5aMC2zenWcg9GiQ6eghV32cywIfhsaUJjKodkctMmiWU6yizequLP+VLtZC58UGtoN0Jxs/7N5WKOqRg2SOqrjaTd1uLysuoBhv0fvP/PDfXRTowdZeHJ+y8c4Ve9M1IGD823P3jgPl36ntBJQuBk4rOo8yYLVRr8nM3VqJMWjVCaY37UyXYWa/k88vBVd2udclMrIA0sLgfMhX7cn578CvDHT5U0ZoIEsIBv/DwZzDVQKrB6lOqEb3A67SVEzJGF20X6dpZ8Nrhs5SMgWaLe9C9RnQrOjo0NjDUQeX+txYiXnbv2xa79sRnH2NAyhnhUDTzeV+CP6hTNWFJVPVVLSXkhdlN+S2CZx+vBap5JiLceMEfQiYveiiwzIHQcGmHsR8LjEoLejUbAq7vcYBaOFNLCWf2v0XSYl3mcp9v2G6kdK5+LUqhA039JPBHqI3+07qLGWBH7bh2p/c63Naia97A+MI/WD2IF+ps=
-	file:
-		- dist/ef-core.min.js
-		- dist/ef-core.min.js.map
-	skip_cleanup: true
-	on:
-		tags: true
+  api_key:
+    secure: E5mAk0LRw+DoIhtW+RAUHNYbubaQAGprHRIZm5ArneZTtqlOBGzMBzXRcEKzFUrHqaXR076gKPLEXJEfJz5rIIi4Qr7P6rRy73R+bu507Vs1+HDwWXQb2CTwoj5m6i6Ts7RYoHyT4O3Z8v2OuZhzlXbn7hzzOxM4f1LZEcxynUK2dmZzOx+popU0H4x6Bl52DBFsM1K5aMC2zenWcg9GiQ6eghV32cywIfhsaUJjKodkctMmiWU6yizequLP+VLtZC58UGtoN0Jxs/7N5WKOqRg2SOqrjaTd1uLysuoBhv0fvP/PDfXRTowdZeHJ+y8c4Ve9M1IGD823P3jgPl36ntBJQuBk4rOo8yYLVRr8nM3VqJMWjVCaY37UyXYWa/k88vBVd2udclMrIA0sLgfMhX7cn578CvDHT5U0ZoIEsIBv/DwZzDVQKrB6lOqEb3A67SVEzJGF20X6dpZ8Nrhs5SMgWaLe9C9RnQrOjo0NjDUQeX+txYiXnbv2xa79sRnH2NAyhnhUDTzeV+CP6hTNWFJVPVVLSXkhdlN+S2CZx+vBap5JiLceMEfQiYveiiwzIHQcGmHsR8LjEoLejUbAq7vcYBaOFNLCWf2v0XSYl3mcp9v2G6kdK5+LUqhA039JPBHqI3+07qLGWBH7bh2p/c63Naia97A+MI/WD2IF+ps=
+  file:
+    - dist/ef-core.min.js
+    - dist/ef-core.min.js.map
+  skip_cleanup: true
+  on:
+    tags: true
 - provider: npm
-	email: syqlds@126.com
-	api_key:
-		secure: RMtSaSmYnb8LjDju+iiIj6CGB8a1JuwnF5EKj4/ZT0OprgYmwHIt8A2Vs5qKjX8vf8qeq1eAPKLa3+NFgT9z3rCYjJWGFkMEQSAQ6dJZtldOyGOsV0rs+1Z0KQZ5BGIGqQmRiDo+jrIxI9OSt2WHpHfGBJn+yG2mI0IGuLzJjiEBhfdweh5Pff16AV9eCF2rt5FIzV7Ybx0N5Pjo8sgj7B/y7YL7X8kAydfUpfbUy3ywyiP1N6/m6p9oihUCBdRedjS+CoDnbqSDc7hT7Xp4kfPUPidLyrHXY23OsVDx3skLk7Ern0lyOjnVF8bEAM6XDCJQjaf5Hgee7bJBMvKDcPH3l5B2Z3bTuUfCeBse7wg67QhiLBPyiQavOpBf8A1FIu+qIK0O+Sk24KiTrnqrGfVbnD6kH6uOCNvFy6bUZw9x71JEJ52oozzT8/k+igGDR7gJjh/yIG8f0nTQYTIdcmmMLobdvfN5QaGJNo0MBRPBy+GoYtiqNZN425auAgEI/LeZHq5b8dTeOO48eQnQDXpUEhmYICw1bpaDPAbKa26+Rim+qOOgHCwZKyLidxjNexAw6zSu8GOjLwqJLe0Eoiv1z9uSDNDnFsIki11TTwCFQiaB4+z3XyYBVhQForPC9etL30e61FwGcfIqCJbV44KxkmDjO6Cp9suu11q/04k=
-	skip_cleanup: true
-	on:
-		branch: master
+  email: syqlds@126.com
+  api_key:
+    secure: RMtSaSmYnb8LjDju+iiIj6CGB8a1JuwnF5EKj4/ZT0OprgYmwHIt8A2Vs5qKjX8vf8qeq1eAPKLa3+NFgT9z3rCYjJWGFkMEQSAQ6dJZtldOyGOsV0rs+1Z0KQZ5BGIGqQmRiDo+jrIxI9OSt2WHpHfGBJn+yG2mI0IGuLzJjiEBhfdweh5Pff16AV9eCF2rt5FIzV7Ybx0N5Pjo8sgj7B/y7YL7X8kAydfUpfbUy3ywyiP1N6/m6p9oihUCBdRedjS+CoDnbqSDc7hT7Xp4kfPUPidLyrHXY23OsVDx3skLk7Ern0lyOjnVF8bEAM6XDCJQjaf5Hgee7bJBMvKDcPH3l5B2Z3bTuUfCeBse7wg67QhiLBPyiQavOpBf8A1FIu+qIK0O+Sk24KiTrnqrGfVbnD6kH6uOCNvFy6bUZw9x71JEJ52oozzT8/k+igGDR7gJjh/yIG8f0nTQYTIdcmmMLobdvfN5QaGJNo0MBRPBy+GoYtiqNZN425auAgEI/LeZHq5b8dTeOO48eQnQDXpUEhmYICw1bpaDPAbKa26+Rim+qOOgHCwZKyLidxjNexAw6zSu8GOjLwqJLe0Eoiv1z9uSDNDnFsIki11TTwCFQiaB4+z3XyYBVhQForPC9etL30e61FwGcfIqCJbV44KxkmDjO6Cp9suu11q/04k=
+  skip_cleanup: true
+  on:
+    branch: master
