@@ -39,7 +39,6 @@ switch (process.env.BUILD_ENV) {
 }
 
 export default {
-
 	input: 'src/ef-core.js',
 	output: {
 		name: 'ef',
