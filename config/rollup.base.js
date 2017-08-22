@@ -1,17 +1,20 @@
+import chalk from 'chalk'
+
 // Rollup plugins
-const buble = require('rollup-plugin-buble')
-const eslint = require('rollup-plugin-eslint')
-const resolve = require('rollup-plugin-node-resolve')
-const commonjs = require('rollup-plugin-commonjs')
-const replace = require('rollup-plugin-replace')
-const uglify = require('rollup-plugin-uglify')
-const progress = require('rollup-plugin-progress')
-const json = require('rollup-plugin-json')
+import buble from 'rollup-plugin-buble'
+import eslint from 'rollup-plugin-eslint'
+import resolve from 'rollup-plugin-node-resolve'
+import commonjs from 'rollup-plugin-commonjs'
+import replace from 'rollup-plugin-replace'
+import uglify from 'rollup-plugin-uglify'
+import progress from 'rollup-plugin-progress'
+import json from 'rollup-plugin-json'
 
 // Log build environment
+console.log('Target:', chalk.bold.green(process.env.NODE_ENV || 'development'))
 switch (process.env.BUILD_ENV) {
 	case 'DEV': {
-		console.log(`
+		console.log(chalk.cyan`
 +---------------+
 | DEVELOP BUILD |
 +---------------+
@@ -19,7 +22,7 @@ switch (process.env.BUILD_ENV) {
 		break
 	}
 	case 'CI': {
-		console.log(`
+		console.log(chalk.green`
 +----------+
 | CI BUILD |
 +----------+
@@ -27,7 +30,7 @@ switch (process.env.BUILD_ENV) {
 		break
 	}
 	default: {
-		console.log(`
+		console.log(chalk.yellow`
 +--------------+
 | NORMAL BUILD |
 +--------------+
@@ -35,13 +38,16 @@ switch (process.env.BUILD_ENV) {
 	}
 }
 
-module.exports = {
-	moduleName: 'ef',
-	entry: 'src/ef-core.js',
+export default {
+
+	input: 'src/ef-core.js',
+	output: {
+		name: 'ef',
+		format: 'umd',
+		sourcemap: true
+	},
 	devDest: 'test/ef-core.dev.js',
 	proDest: 'dist/ef-core.min.js',
-	format: 'umd',
-	sourceMap: true,
 	plugins: [
 		progress({
 			clearLine: false
@@ -57,7 +63,7 @@ module.exports = {
 		commonjs(),
 		json(),
 		replace({
-			ENV: JSON.stringify(process.env.NODE_ENV || 'development')
+			ENV: `'${process.env.NODE_ENV || 'development'}'`
 		}),
 		buble({
 			transforms: {
