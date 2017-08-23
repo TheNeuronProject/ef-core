@@ -14,6 +14,20 @@ const inform = () => {
 	return count
 }
 
+const execModifications = () => {
+	const renderQuery = ARR.unique(query)
+	for (let i of renderQuery) i()
+	if (ENV !== 'production') console.info('[EF]', `${query.length} modification operations cached, ${renderQuery.length} executed.`)
+	ARR.empty(query)
+}
+
+const execDomModifications = () => {
+	const domRenderQuery = ARR.rightUnique(domQuery)
+	for (let i of domRenderQuery) i()
+	if (ENV !== 'production') console.info('[EF]', `${domQuery.length} DOM operations cached, ${domRenderQuery.length} executed.`)
+	ARR.empty(domQuery)
+}
+
 const execUserQuery = () => {
 	const userFnQuery = ARR.unique(userQuery)
 	for (let i of userFnQuery) i()
@@ -25,19 +39,9 @@ const exec = (immediate) => {
 	if (!immediate && (count -= 1) > 0) return count
 	count = 0
 
-	if (query.length > 0) {
-		const renderQuery = ARR.unique(query)
-		for (let i of renderQuery) i()
-		if (ENV !== 'production') console.info('[EF]', `${query.length} modification operations cached, ${renderQuery.length} executed.`)
-		ARR.empty(query)
-	}
+	if (query.length > 0) execModifications()
 
-	if (domQuery.length > 0) {
-		const domRenderQuery = ARR.rightUnique(domQuery)
-		for (let i of domRenderQuery) i()
-		if (ENV !== 'production') console.info('[EF]', `${domQuery.length} DOM operations cached, ${domRenderQuery.length} executed.`)
-		ARR.empty(domQuery)
-	}
+	if (domQuery.length > 0) execDomModifications()
 
 	// Execute user query after DOM update
 	if (userQuery.length > 0) setTimeout(execUserQuery, 0)
