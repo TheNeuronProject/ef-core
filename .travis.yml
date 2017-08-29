@@ -3,7 +3,8 @@ language: node_js
 node_js:
 - '8'
 env:
-- BUILD_ENV=CI
+- BUILD_ENV=CI BUILD_TARGET=production
+- BUILD_ENV=CI BUILD_TARGET=development
 cache:
   directories:
   - node_modules
@@ -16,6 +17,8 @@ deploy:
   file:
     - dist/ef-core.min.js
     - dist/ef-core.min.js.map
+    - dist/ef-core.dev.js
+    - dist/ef-core.dev.js.map
   skip_cleanup: true
   on:
     tags: true
