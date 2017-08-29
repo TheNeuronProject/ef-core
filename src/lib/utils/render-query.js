@@ -17,21 +17,21 @@ const inform = () => {
 const execModifications = () => {
 	const renderQuery = ARR.unique(query)
 	for (let i of renderQuery) i()
-	if (ENV !== 'production') console.info('[EF]', `${query.length} modification operations cached, ${renderQuery.length} executed.`)
+	if (ENV !== 'production') console.info('[EF]', `${query.length} modification operation(s) cached, ${renderQuery.length} executed.`)
 	ARR.empty(query)
 }
 
 const execDomModifications = () => {
 	const domRenderQuery = ARR.rightUnique(domQuery)
 	for (let i of domRenderQuery) i()
-	if (ENV !== 'production') console.info('[EF]', `${domQuery.length} DOM operations cached, ${domRenderQuery.length} executed.`)
+	if (ENV !== 'production') console.info('[EF]', `${domQuery.length} DOM operation(s) cached, ${domRenderQuery.length} executed.`)
 	ARR.empty(domQuery)
 }
 
 const execUserQuery = () => {
 	const userFnQuery = ARR.unique(userQuery)
 	for (let i of userFnQuery) i()
-	if (ENV !== 'production') console.info('[EF]', `${userQuery.length} user operations cached, ${userFnQuery.length} executed.`)
+	if (ENV !== 'production') console.info('[EF]', `${userQuery.length} user operation(s) cached, ${userFnQuery.length} executed.`)
 	ARR.empty(userQuery)
 }
 
