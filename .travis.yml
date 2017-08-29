@@ -1,10 +1,9 @@
-script: npm run build
+script: npm run build && npm run prod
 language: node_js
 node_js:
 - '8'
 env:
-- BUILD_ENV=CI BUILD_TARGET=production
-- BUILD_ENV=CI BUILD_TARGET=development
+- BUILD_ENV=CI
 cache:
   directories:
   - node_modules
