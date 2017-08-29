@@ -94,10 +94,10 @@ var data1 = {
 	}
 }
 
-var module1 = ef.create(template)
-var module2 = ef.create(template2)
+var module1 = efCore.create(template)
+var module2 = efCore.create(template2)
 
-ef.inform()
+efCore.inform()
 
 var state = new module1()
 var state2 = new module1()
@@ -150,7 +150,7 @@ state2.$subscribe('style', function (info) {
 })
 
 state2.$methods.sendMsg = function (info) {
-	ef.inform()
+	efCore.inform()
 	var count = parseInt(info.state.$data.style)
 	var startTime = Date.now()
 	for (var i = 0; i < count; i++) states.push(new module1())
@@ -167,7 +167,7 @@ state2.$methods.sendMsg = function (info) {
 	for (var i = 0; i < states.length; i++) {
 		states[i].$destroy()
 	}
-	ef.exec()
+	efCore.exec()
 	endTime = Date.now()
 	states = []
 	time = endTime - startTime
@@ -177,4 +177,4 @@ state2.$methods.sendMsg = function (info) {
 
 // state4.$methods.sendMsg = function(thisState) { alert('The message is "\n' + thisState.$data.text + '"!') }
 state.$mount({target: document.body})
-ef.exec()
+efCore.exec()
