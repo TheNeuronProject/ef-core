@@ -1,4 +1,4 @@
-script: npm run build
+script: npm run build && npm run prod
 language: node_js
 node_js:
 - '8'
@@ -9,28 +9,22 @@ cache:
   - node_modules
 notifications:
   webhooks: https://fathomless-fjord-24024.herokuapp.com/notify
-jobs:
-  include:
-    - stage: Build
-      script: npm run build && npm run prod
-    - stage: Release
-      script: echo "Deploying..."
-      deploy:
-      - provider: releases
-        api_key:
-          secure: No2Y6g0dmjnMT2mHYjafM4VpEll8/NS9Yr9FG40A0tgHbyYaYO4PF7zo6tgsU6P5Z2yA+yhg26l7SOiNpRqKLytLk+GHUSE0hkpX+kLi7F+9ai1FvlJDYOCU1WbGba1d+NH1hfaD/eKkuknluPwJv3fEv9DOeYRk6xuv9HOrlY7medCRH75hCG0XPl7hdbLyHHfaknnp618IOhLHExeyB5jHFpH14fmyGmFomVRyAEuW/ALcBlFD1otllxg1Nvd9Nqd7q7NcG11IZ6Pu4ypccXlT0xwttWLCgU6aGWjXr6WeVxaGA8s+UO2q7ihbLt/frQc5IEPMPr/sfT8TJc5Yv+hDgiGSyTl/8pwQbBUsUYNiowJ5l3T1bm04nJInpIGHdpigrv/MiQtxGEUNJTvA5z0oUQR0KlqAGhZg+5S7RH0T9Y3CP246qGKhJRnZwCU4JDRcmPZXyDX9jhc6NvV+4Kdok792pthdfcmxcjLvPp8e7At35cA756JMfH2MNBTL1sdJcaHLyBVzgVSKX96+XnvWK3yE1tOJ15PyGKrudzlpR5GA4JFSatb3vrPasjNF9TiJ+svlD0Fclb1UTHZye9FeO7syW5GpNhubXedYgtj7dXqYIIs5ZD5ups7FJgln6Thl9z0ftKJn1G1C3qW9kXAl1l9bHr5oQYnx8ItxKTg=
-        file:
-          - dist/ef-core.min.js
-          - dist/ef-core.min.js.map
-          - dist/ef-core.dev.js
-          - dist/ef-core.dev.js.map
-        skip_cleanup: true
-        on:
-          tags: true
-      - provider: npm
-        email: syqlds@126.com
-        api_key:
-          secure: 0ndRKF+2hWc8Fl3jlE1HS3tpfF07wHWTxZ5xqnAJEJhyhMelGqAvghvH+n/oNfuw7yUQRnDQCSWPSAgstoUpUqREKEVX5eDXhrMdzs+dX4Ki1VxbFbTUKOsV+GAJULihqizOqzN4vkeg0tPE+8o8sZ4YiQn9TdYespOIMZ89hGlMSf070otcg0geue8cm3dVi8fiGeCZtaZK/664rCi+jFGEe73PApN3HDwDofmxEqfRFOR5+guKj+fzyEjChoS00k0cih4clbQwdFvr2azcquKmxt9doFhSC6mrQ8P31JMcf4V0Z1un4bE5jy0WVaMMrJnyQLaZehxqJTdloN9L6Lf3W+yT6qCTjAmr4lFExMz0HqEz043VpG82a5Ns5YBtlN+hdEk5skBCeTg1weZj9VEg93tIHDVhZX8SYJNQ8mIVO4k3Fy4PNbIwtRGfPBTls75XXarrNZ32vEGdwc8wXWm9WQEKGCnurR9VN8rC+NUKDc1F+N3YBPhz4AogEhhnUognwyXgJ+mhfDqpL8iy4dJbs3DMgJRbkl6JBIhh8FTdTjMSixzJ9ZEziYKJ6LQI1cEF82WcfN9N0xeCZncBFHzSlsOlfcIhFomi3NQzATdfhweunleSHg7s/LaSmAKF06nqUjVtopuf+yM7Gbzi7LBSzSxW6++EoKM2Gwqd7Og=
-        skip_cleanup: true
-        on:
-          branch: master
+deploy:
+- provider: releases
+  api_key:
+    secure: No2Y6g0dmjnMT2mHYjafM4VpEll8/NS9Yr9FG40A0tgHbyYaYO4PF7zo6tgsU6P5Z2yA+yhg26l7SOiNpRqKLytLk+GHUSE0hkpX+kLi7F+9ai1FvlJDYOCU1WbGba1d+NH1hfaD/eKkuknluPwJv3fEv9DOeYRk6xuv9HOrlY7medCRH75hCG0XPl7hdbLyHHfaknnp618IOhLHExeyB5jHFpH14fmyGmFomVRyAEuW/ALcBlFD1otllxg1Nvd9Nqd7q7NcG11IZ6Pu4ypccXlT0xwttWLCgU6aGWjXr6WeVxaGA8s+UO2q7ihbLt/frQc5IEPMPr/sfT8TJc5Yv+hDgiGSyTl/8pwQbBUsUYNiowJ5l3T1bm04nJInpIGHdpigrv/MiQtxGEUNJTvA5z0oUQR0KlqAGhZg+5S7RH0T9Y3CP246qGKhJRnZwCU4JDRcmPZXyDX9jhc6NvV+4Kdok792pthdfcmxcjLvPp8e7At35cA756JMfH2MNBTL1sdJcaHLyBVzgVSKX96+XnvWK3yE1tOJ15PyGKrudzlpR5GA4JFSatb3vrPasjNF9TiJ+svlD0Fclb1UTHZye9FeO7syW5GpNhubXedYgtj7dXqYIIs5ZD5ups7FJgln6Thl9z0ftKJn1G1C3qW9kXAl1l9bHr5oQYnx8ItxKTg=
+  file:
+    - dist/ef-core.min.js
+    - dist/ef-core.min.js.map
+    - dist/ef-core.dev.js
+    - dist/ef-core.dev.js.map
+  skip_cleanup: true
+  on:
+    tags: true
+- provider: npm
+  email: syqlds@126.com
+  api_key:
+    secure: 0ndRKF+2hWc8Fl3jlE1HS3tpfF07wHWTxZ5xqnAJEJhyhMelGqAvghvH+n/oNfuw7yUQRnDQCSWPSAgstoUpUqREKEVX5eDXhrMdzs+dX4Ki1VxbFbTUKOsV+GAJULihqizOqzN4vkeg0tPE+8o8sZ4YiQn9TdYespOIMZ89hGlMSf070otcg0geue8cm3dVi8fiGeCZtaZK/664rCi+jFGEe73PApN3HDwDofmxEqfRFOR5+guKj+fzyEjChoS00k0cih4clbQwdFvr2azcquKmxt9doFhSC6mrQ8P31JMcf4V0Z1un4bE5jy0WVaMMrJnyQLaZehxqJTdloN9L6Lf3W+yT6qCTjAmr4lFExMz0HqEz043VpG82a5Ns5YBtlN+hdEk5skBCeTg1weZj9VEg93tIHDVhZX8SYJNQ8mIVO4k3Fy4PNbIwtRGfPBTls75XXarrNZ32vEGdwc8wXWm9WQEKGCnurR9VN8rC+NUKDc1F+N3YBPhz4AogEhhnUognwyXgJ+mhfDqpL8iy4dJbs3DMgJRbkl6JBIhh8FTdTjMSixzJ9ZEziYKJ6LQI1cEF82WcfN9N0xeCZncBFHzSlsOlfcIhFomi3NQzATdfhweunleSHg7s/LaSmAKF06nqUjVtopuf+yM7Gbzi7LBSzSxW6++EoKM2Gwqd7Og=
+  skip_cleanup: true
+  on:
+    branch: master
