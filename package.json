@@ -1,13 +1,13 @@
 {
   "name": "ef-core",
-  "version": "0.4.0-beta.7",
+  "version": "0.4.0-beta.8",
   "description": "Core of ef.js (without parser)",
   "main": "dist/ef-core.min.js",
   "module": "src/ef-core.js",
   "scripts": {
     "dev": "rollup -c ./config/rollup.dev.js -w",
-    "build": "cross-env NODE_ENV=production rollup -c ./config/rollup.prod.js",
-    "prod": "cross-env NODE_ENV=production BUILD_TARGET=production rollup -c ./config/rollup.prod.js",
+    "build": "rollup -c ./config/rollup.prod.js",
+    "prod": "cross-env BUILD_TARGET=production rollup -c ./config/rollup.prod.js",
     "lint": "eslint --ext .js src"
   },
   "repository": {
