@@ -37,7 +37,7 @@ switch (process.env.BUILD_ENV) {
 }
 
 // Log build environment
-console.log('Bundle Target:', chalk.bold.green(process.env.NODE_ENV || 'development'))
+console.log('Build Target:', chalk.bold.green(process.env.BUILD_TARGET || 'development'))
 
 export default {
 	input: 'src/ef-core.js',
@@ -64,7 +64,7 @@ export default {
 		commonjs(),
 		json(),
 		replace({
-			ENV: `'${process.env.BUILD_TARGET || process.env.NODE_ENV || 'development'}'`
+			ENV: `'${process.env.BUILD_TARGET || 'development'}'`
 		}),
 		buble({
 			transforms: {
@@ -73,6 +73,6 @@ export default {
 			},
 			objectAssign: 'Object.assign'
 		}),
-		(process.env.NODE_ENV === 'production' && uglify())
+		(process.env.BUILD_TARGET === 'production' && uglify())
 	]
 }
