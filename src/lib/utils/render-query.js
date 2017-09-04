@@ -29,6 +29,7 @@ const execDomModifications = () => {
 }
 
 const execUserQuery = () => {
+	if (userQuery.length === 0) return
 	const userFnQuery = ARR.unique(userQuery)
 	for (let i of userFnQuery) i()
 	if (ENV !== 'production') console.info('[EF]', `${userQuery.length} user operation(s) cached, ${userFnQuery.length} executed.`)
