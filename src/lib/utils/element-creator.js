@@ -4,6 +4,8 @@ import initBinding from './binding.js'
 import { queue, inform, exec } from './render-query.js'
 import getEvent from './event-helper.js'
 
+const checkValidType = obj => ['number', 'boolean', 'string'].indexOf(typeof obj) > -1
+
 // SVG tags require namespace to work properly
 const createByTag = (tag, svg) => {
 	if (svg) return document.createElementNS('http://www.w3.org/2000/svg', tag)
@@ -91,7 +93,7 @@ const getAttrHandler = (element, key) => {
 }
 
 const addAttr = ({element, attr, key, state, handlers, subscribers, innerData}) => {
-	if (typeof attr === 'string') element.setAttribute(key, attr)
+	if (checkValidType(attr)) element.setAttribute(key, attr)
 	else {
 		const handler = getAttrHandler(element, key)
 		queue([regTmpl({val: attr, state, handlers, subscribers, innerData, handler})])
@@ -99,7 +101,7 @@ const addAttr = ({element, attr, key, state, handlers, subscribers, innerData}) 
 }
 
 const addProp = ({element, prop, key, state, handlers, subscribers, innerData}) => {
-	if (typeof prop === 'string') element[key] = prop
+	if (checkValidType(prop)) element[key] = prop
 	else {
 		const handler = (val) => {
 			element[key] = val
@@ -143,7 +145,7 @@ const addEvent = ({element, event, state, handlers, subscribers, innerData}) => 
 		if (i) e.stopImmediatePropagation()
 		if (p) e.preventDefault()
 		if (state.$methods[m]) state.$methods[m]({e, value: _handler(), state})
-		else if (ENV !== 'production') console.warn('[EF]', `Method named '${m}' not found!`)
+		else if (process.env.NODE_ENV !== 'production') console.warn('[EF]', `Method named '${m}' not found! Value been passed is:`, _handler())
 	}, !!u)
 }
 

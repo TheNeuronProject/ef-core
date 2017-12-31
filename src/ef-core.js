@@ -18,4 +18,4 @@ const create = (value) => {
 
 export { create, onNextRender, inform, exec, bundle, version }
 
-if (ENV !== 'production') console.info('[EF]', `ef-core v${version} initialized!`)
+if (process.env.NODE_ENV !== 'production') console.info('[EF]', `ef-core v${version} initialized!`)
