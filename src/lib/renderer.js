@@ -77,7 +77,7 @@ const state = class {
 		 */
 		const safeZone = document.createDocumentFragment()
 
-		if (ENV !== 'production') nodeInfo.placeholder = document.createComment('EF COMPONENT PLACEHOLDER')
+		if (process.env.NODE_ENV !== 'production') nodeInfo.placeholder = document.createComment('EF COMPONENT PLACEHOLDER')
 
 		const mount = () => {
 			if (nodeInfo.replace.length > 0) {
@@ -133,7 +133,7 @@ const state = class {
 					inform()
 					if (nodeInfo.parent) {
 						this.$umount()
-						if (ENV !== 'production') console.warn('[EF]', 'Component detached from previous mounting point.')
+						if (process.env.NODE_ENV !== 'production') console.warn('[EF]', 'Component detached from previous mounting point.')
 					}
 
 					if (!parent) parent = target
