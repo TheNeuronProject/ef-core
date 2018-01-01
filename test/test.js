@@ -1,7 +1,7 @@
 var template = parseEft('\n' +
 '>div.{{class.text = box test}}\n' +
 '	#testattr\n' +
-' #emptyattr = {{empty}}\n' +
+' #emptyattr = {{empty = &}}\n' +
 '	#id = id1\n' +
 '	.text0\n' +
 '	>br\n' +
@@ -33,16 +33,16 @@ var template = parseEft('\n' +
 '		>input\n' +
 '			#type = radio\n' +
 '			#name = testradio\n' +
-'			%checked = {{testRadio1}}\n' +
+'			%checked = {{testRadio1 = true}}\n' +
 '		.checked: {{testRadio1}}\n' +
 '		>input\n' +
 '			#type = radio\n' +
 '			#name = testradio\n' +
-'			%checked = {{testRadio2}}\n' +
+'			%checked = {{testRadio2 = false}}\n' +
 '		.checked: {{testRadio2}}\n' +
 '		>input\n' +
 '			#type = checkbox\n' +
-'			%checked = {{testCheck}}\n' +
+'			%checked = {{testCheck = true}}\n' +
 '		.checked: {{testCheck}}\n' +
 '		>br\n' +
 '		.Input style here: \n' +
