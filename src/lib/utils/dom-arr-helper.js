@@ -75,14 +75,7 @@ const DOMARR = {
 		if (this.length === 0) return this.push(...items).length
 		const elements = []
 		inform()
-		for (let i of items) {
-			if (i.$parent) {
-				if (process.env.NODE_ENV !== 'production') console.warn('[EF]', 'Better detach the component before attaching it to a new component!')
-				return
-			}
-			i.$umount()
-			ARR.push(elements, i.$mount({parent: state, key}))
-		}
+		for (let i of items) ARR.push(elements, i.$mount({parent: state, key}))
 		DOM.after(anchor, ...elements)
 		exec()
 		return ARR.unshift(this, ...items)
