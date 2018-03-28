@@ -36,25 +36,31 @@ const regTmpl = ({val, state, handlers, subscribers, innerData, handler}) => {
 	return () => val
 }
 
-const updateOthers = ({dataNode, handlerNode, subscriberNode, _handler, state, _key, value}) => {
-	if (dataNode[_key] === value) return
-	dataNode[_key] = value
-	const query = ARR.copy(handlerNode)
-	ARR.remove(query, _handler)
-	queue(query)
+const updateOthers = ({parentNode, handlerNode, _handler, _key, value}) => {
+	// Remove handler for this element temporarily
+	ARR.remove(handlerNode, _handler)
 	inform()
-	for (let i of subscriberNode) i({state, value})
+	parentNode[_key] = value
 	exec()
+	// Add back the handler
+	ARR.push(handlerNode, _handler)
 }
 
 const addValListener = ({_handler, state, handlers, subscribers, innerData, element, key, expr}) => {
-	const {dataNode, handlerNode, subscriberNode, _key} = initBinding({bind: expr, state, handlers, subscribers, innerData})
-	const _update = () => updateOthers({dataNode, handlerNode, subscriberNode, _handler, state, _key, value: element.value})
+	const {parentNode, handlerNode, _key} = initBinding({bind: expr, state, handlers, subscribers, innerData})
+	const _update = () => updateOthers({parentNode, handlerNode, _handler, _key, value: element.value})
 	if (key === 'value') {
 		// Listen to input, keyup and change events in order to work in most browsers.
 		element.addEventListener('input', _update, true)
 		element.addEventListener('keyup', _update, true)
 		element.addEventListener('change', _update, true)
+		// // Remove keyup and change listener if browser supports input event correctly
+		// const removeListener = () => {
+		// 	element.removeEventListener('input', removeListener, true)
+		// 	element.removeEventListener('keyup', _update, true)
+		// 	element.removeEventListener('change', _update, true)
+		// }
+		// element.addEventListener('input', removeListener, true)
 	} else {
 		element.addEventListener('change', () => {
 			// Trigger change to the element it-self
@@ -74,7 +80,7 @@ const addValListener = ({_handler, state, handlers, subscribers, innerData, elem
 			}
 		}, true)
 		// Use custom event to avoid loops and conflicts
-		element.addEventListener('ef-change-event', () => updateOthers({dataNode, handlerNode, subscriberNode, _handler, state, _key, value: element.checked}))
+		element.addEventListener('ef-change-event', () => updateOthers({parentNode, handlerNode, _handler, _key, value: element.checked}))
 	}
 }
 

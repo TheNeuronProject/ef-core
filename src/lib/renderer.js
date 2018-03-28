@@ -193,8 +193,11 @@ const state = class {
 				value: (pathStr, subscriber) => {
 					const _path = pathStr.split('.')
 					const { dataNode, subscriberNode, _key } = initBinding({bind: [_path], state: this, handlers, subscribers, innerData})
-					// Execute subscriber immediately
+					inform()
+					// Execute the subscriber function immediately
 					subscriber({state: this, value: dataNode[_key]})
+					exec()
+					// Put the subscriber inside the subscriberNode
 					subscriberNode.push(subscriber)
 				},
 				configurable: true
