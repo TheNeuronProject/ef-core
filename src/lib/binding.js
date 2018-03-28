@@ -1,6 +1,8 @@
-import ARR from './array-helper.js'
 import { resolve } from './resolver.js'
-import { queue, inform, exec } from './render-query.js'
+import { queue } from './render-queue.js'
+import { execSubscribers } from './subscriber-call-stack.js'
+import ARR from './utils/array-helper.js'
+import isnan from './utils/isnan.js'
 
 const initDataNode = ({parentNode, dataNode, handlerNode, subscriberNode, state, _key}) => {
 	Object.defineProperty(parentNode, _key, {
@@ -8,12 +10,11 @@ const initDataNode = ({parentNode, dataNode, handlerNode, subscriberNode, state,
 			return dataNode[_key]
 		},
 		set(value) {
-			if (dataNode[_key] === value) return
+			// Comparing NaN is like eating a cake and suddenly encounter a grain of sand
+			if (dataNode[_key] === value || (isnan(dataNode[_key]) && isnan(value))) return
 			dataNode[_key] = value
 			queue(handlerNode)
-			inform()
-			for (let j of subscriberNode) j({state, value})
-			exec()
+			if (subscriberNode.length > 0) execSubscribers(subscriberNode, {state, value})
 		},
 		enumerable: true
 	})
@@ -37,7 +38,7 @@ const initBinding = ({bind, state, handlers, subscribers, innerData}) => {
 	// bind[1] is the default value for this node
 	if (bind.length > 1) parentNode[_key] = bind[1]
 
-	return {dataNode, handlerNode, subscriberNode, _key}
+	return {dataNode, parentNode, handlerNode, subscriberNode, _key}
 }
 
 export default initBinding
