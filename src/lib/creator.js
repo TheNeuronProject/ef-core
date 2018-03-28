@@ -1,10 +1,10 @@
 import createElement from './element-creator.js'
-import DOM from './dom-helper.js'
-import ARR from './array-helper.js'
-import defineArr from './dom-arr-helper.js'
-import typeOf from './type-of.js'
+import { queue, inform, exec } from './render-queue.js'
+import DOM from './utils/dom-helper.js'
+import ARR from './utils/array-helper.js'
+import defineArr from './utils/dom-arr-helper.js'
+import typeOf from './utils/type-of.js'
 import initBinding from './binding.js'
-import { queue, inform, exec } from './render-query.js'
 
 const bindTextNode = ({node, state, handlers, subscribers, innerData, element}) => {
 	// Data binding text node

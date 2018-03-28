@@ -1,8 +1,8 @@
-import ARR from './array-helper.js'
-import { mixVal } from './literals-mix.js'
 import initBinding from './binding.js'
-import { queue, inform, exec } from './render-query.js'
-import getEvent from './event-helper.js'
+import { queue, inform, exec } from './render-queue.js'
+import ARR from './utils/array-helper.js'
+import getEvent from './utils/event-helper.js'
+import { mixVal } from './utils/literals-mix.js'
 
 const checkValidType = obj => ['number', 'boolean', 'string'].indexOf(typeof obj) > -1
 

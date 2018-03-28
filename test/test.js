@@ -84,7 +84,7 @@ var data1 = {
 	$data: {
 			class: 'box test class',
 			name: 'Bob',
-			job: 'Assit Alice',
+			job: 'Assist Alice',
 			notice: 'Hold shift and alt and then click here. An alert should pop up'
 	},
 	$methods: {
@@ -118,7 +118,7 @@ state3.$data.class = 'box'
 state3.$data.name = 'Alice'
 state3.$data.job = 'Developer'
 // state3.$data.notice = 'N/A'
-state4.$data.job = 'Assiting Alice'
+state4.$data.job = 'Assisting Alice'
 
 var data2 = {
 	$data: {
@@ -153,9 +153,11 @@ state2.$methods.sendMsg = function (info) {
 	efCore.inform()
 	var count = parseInt(info.state.$data.style)
 	var startTime = Date.now()
+	console.time('Create')
 	for (var i = 0; i < count; i++) states.push(new module1())
 	state4.list1.push.apply(state4.list1, states)
 	// ef.exec()
+	console.timeEnd('Create')
 	var endTime = Date.now()
 	var time = endTime - startTime
 	var msg = '' + count + ' components rendered in ' + time + 'ms.'
@@ -164,10 +166,12 @@ state2.$methods.sendMsg = function (info) {
 	// states = []
 	// ef.inform()
 	startTime = Date.now()
+	console.time('Destroy')
 	for (var i = 0; i < states.length; i++) {
 		states[i].$destroy()
 	}
 	efCore.exec()
+	console.timeEnd('Destroy')
 	endTime = Date.now()
 	states = []
 	time = endTime - startTime

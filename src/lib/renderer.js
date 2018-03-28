@@ -1,10 +1,10 @@
-import create from './utils/creator.js'
-import { resolveReactivePath, resolveSubscriber } from './utils/resolver.js'
-import initBinding from './utils/binding.js'
-import ARR from './utils/array-helper.js'
+import create from './creator.js'
+import initBinding from './binding.js'
+import { queueDom, inform, exec } from './render-queue.js'
+import { resolveReactivePath, resolveSubscriber } from './resolver.js'
 import DOM from './utils/dom-helper.js'
+import ARR from './utils/array-helper.js'
 import { assign } from './utils/polyfills.js'
-import { queueDom, inform, exec } from './utils/render-query.js'
 
 const unsubscribe = (_path, fn, subscribers) => {
 	const subscriberNode = resolveSubscriber(_path, subscribers)

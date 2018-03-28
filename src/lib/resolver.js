@@ -1,5 +1,5 @@
-import { assign } from './polyfills.js'
-import { inform, exec } from './render-query.js'
+import { inform, exec } from './render-queue.js'
+import { assign } from './utils/polyfills.js'
 
 const resolveAllPath = ({_path, handlers, subscribers, innerData}) => {
 	for (let i of _path) {

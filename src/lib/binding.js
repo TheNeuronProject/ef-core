@@ -1,6 +1,6 @@
-import ARR from './array-helper.js'
 import { resolve } from './resolver.js'
-import { queue, inform, exec } from './render-query.js'
+import { queue, inform, exec } from './render-queue.js'
+import ARR from './utils/array-helper.js'
 
 const initDataNode = ({parentNode, dataNode, handlerNode, subscriberNode, state, _key}) => {
 	Object.defineProperty(parentNode, _key, {
