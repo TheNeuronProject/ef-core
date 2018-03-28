@@ -42,7 +42,7 @@ const exec = (immediate) => {
 	if (!immediate && (count -= 1) > 0) return count
 	count = 0
 
-	if (queue.length > 0) execModifications()
+	if (modificationQueue.length > 0) execModifications()
 
 	if (domQueue.length > 0) execDomModifications()
 
