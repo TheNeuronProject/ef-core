@@ -17,7 +17,11 @@ const execSubscribers = (subscriberNode, data) => {
 	pushStack(subscriberNode)
 	// Execute the subscriber function
 	inform()
-	for (const subscriber of subscriberNode) subscriber(data)
+	try {
+		for (const subscriber of subscriberNode) subscriber(data)
+	} catch (e) {
+		console.error('[EF]', 'Error caught when executing subscribers:\n', e)
+	}
 	exec()
 	// Remove the subscriberNode from the stack so it could be called again
 	popStack(subscriberNode)

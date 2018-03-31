@@ -195,10 +195,14 @@ const state = class {
 					const { dataNode, subscriberNode, _key } = initBinding({bind: [_path], state: this, handlers, subscribers, innerData})
 					inform()
 					// Execute the subscriber function immediately
-					subscriber({state: this, value: dataNode[_key]})
+					try {
+						subscriber({state: this, value: dataNode[_key]})
+						// Put the subscriber inside the subscriberNode
+						subscriberNode.push(subscriber)
+					} catch (e) {
+						console.error('[EF]', 'Error caught when registering subscriber:\n', e)
+					}
 					exec()
-					// Put the subscriber inside the subscriberNode
-					subscriberNode.push(subscriber)
 				},
 				configurable: true
 			},
