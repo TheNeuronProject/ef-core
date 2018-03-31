@@ -54,7 +54,12 @@ const exec = (immediate) => {
 
 const bundle = (cb) => {
 	inform()
-	return exec(cb(inform, exec))
+	try {
+		return exec(cb(inform, exec))
+	} catch (e) {
+		console.error('[EF]', 'Error caught when executing bundle:\n', e)
+		return exec()
+	}
 }
 
 export { queue, queueDom, onNextRender, inform, exec, bundle, isPaused }
