@@ -12,7 +12,9 @@ const ARR = {
 		if (!Array.isArray(right)) return false
 		if (left === right) return true
 		if (left.length !== right.length) return false
-		for (let i in left) if (left[i] !== right[i]) return false
+		for (let i = 0, l = left.length; i < l; i++) {
+			if (left[i] !== right[i]) return false
+		}
 		return true
 	},
 	pop(arr) {
