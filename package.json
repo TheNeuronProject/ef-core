@@ -1,6 +1,6 @@
 {
   "name": "ef-core",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "description": "Core of ef.js (without parser)",
   "main": "dist/ef-core.min.js",
   "module": "src/ef-core.js",
@@ -27,11 +27,11 @@
   },
   "homepage": "https://ef.js.org",
   "devDependencies": {
-    "chalk": "^2.3.2",
+    "chalk": "^2.4.0",
     "chokidar": "^2.0.3",
     "cross-env": "^5.1.4",
     "eslint": "^4.19.1",
-    "rollup": "^0.57.1",
+    "rollup": "^0.58.1",
     "rollup-plugin-browsersync": "^0.2.6",
     "rollup-plugin-buble": "^0.19.2",
     "rollup-plugin-commonjs": "^9.1.0",

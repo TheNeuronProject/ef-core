@@ -1,7 +1,7 @@
 script: npm run build && npm run prod
 language: node_js
 node_js:
-- '8'
+- '9'
 env:
 - BUILD_ENV=CI
 cache:
@@ -27,4 +27,4 @@ deploy:
     secure: 0ndRKF+2hWc8Fl3jlE1HS3tpfF07wHWTxZ5xqnAJEJhyhMelGqAvghvH+n/oNfuw7yUQRnDQCSWPSAgstoUpUqREKEVX5eDXhrMdzs+dX4Ki1VxbFbTUKOsV+GAJULihqizOqzN4vkeg0tPE+8o8sZ4YiQn9TdYespOIMZ89hGlMSf070otcg0geue8cm3dVi8fiGeCZtaZK/664rCi+jFGEe73PApN3HDwDofmxEqfRFOR5+guKj+fzyEjChoS00k0cih4clbQwdFvr2azcquKmxt9doFhSC6mrQ8P31JMcf4V0Z1un4bE5jy0WVaMMrJnyQLaZehxqJTdloN9L6Lf3W+yT6qCTjAmr4lFExMz0HqEz043VpG82a5Ns5YBtlN+hdEk5skBCeTg1weZj9VEg93tIHDVhZX8SYJNQ8mIVO4k3Fy4PNbIwtRGfPBTls75XXarrNZ32vEGdwc8wXWm9WQEKGCnurR9VN8rC+NUKDc1F+N3YBPhz4AogEhhnUognwyXgJ+mhfDqpL8iy4dJbs3DMgJRbkl6JBIhh8FTdTjMSixzJ9ZEziYKJ6LQI1cEF82WcfN9N0xeCZncBFHzSlsOlfcIhFomi3NQzATdfhweunleSHg7s/LaSmAKF06nqUjVtopuf+yM7Gbzi7LBSzSxW6++EoKM2Gwqd7Og=
   skip_cleanup: true
   on:
-    branch: master
+    tags: true
