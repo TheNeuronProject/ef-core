@@ -5,6 +5,7 @@ import { resolveReactivePath, resolveSubscriber } from './resolver.js'
 import DOM from './utils/dom-helper.js'
 import ARR from './utils/array-helper.js'
 import { assign } from './utils/polyfills.js'
+import mountOptions from '../mount-options.js'
 
 const unsubscribe = (_path, fn, subscribers) => {
 	const subscriberNode = resolveSubscriber(_path, subscribers)
@@ -99,20 +100,20 @@ const state = class {
 		}
 
 		switch (option) {
-			case 'before': {
+			case mountOptions.BEFORE: {
 				DOM.before(target, nodeInfo.placeholder)
 				break
 			}
-			case 'after': {
+			case mountOptions.AFTER: {
 				DOM.after(target, nodeInfo.placeholder)
 				break
 			}
-			case 'replace': {
+			case mountOptions.REPLACE: {
 				DOM.before(target, nodeInfo.placeholder)
 				nodeInfo.replace.push(target)
 				break
 			}
-			case 'append':
+			case mountOptions.APPEND:
 			default: {
 				DOM.append(target, nodeInfo.placeholder)
 			}

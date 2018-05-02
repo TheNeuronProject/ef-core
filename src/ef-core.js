@@ -1,5 +1,6 @@
 // Import everything
 import state from './lib/renderer.js'
+import mountOptions from './mount-options.js'
 import { onNextRender, inform, exec, bundle, isPaused } from './lib/render-queue.js'
 import { version } from '../package.json'
 
@@ -16,6 +17,6 @@ const create = (value) => {
 	return ef
 }
 
-export { create, onNextRender, inform, exec, bundle, isPaused, version }
+export { create, onNextRender, inform, exec, bundle, isPaused, mountOptions, version }
 
 if (process.env.NODE_ENV !== 'production') console.info('[EF]', `ef-core v${version} initialized!`)
