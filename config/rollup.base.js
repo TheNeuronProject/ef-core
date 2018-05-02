@@ -30,7 +30,7 @@ console.log('Build Target:', chalk.bold.green(process.env.BUILD_TARGET || 'devel
 export default {
 	input: 'src/ef-core.js',
 	output: {
-		name: 'efCore',
+		name: 'ef',
 		format: 'umd',
 		sourcemap: true
 	},
