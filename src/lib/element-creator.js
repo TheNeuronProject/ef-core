@@ -126,7 +126,7 @@ const rawHandler = val => val
 const addEvent = ({element, event, state, handlers, subscribers, innerData}) => {
 
 	/**
-	 *  l: listener									: string
+	 *  l: listener                 : string
 	 *  m: method                   : string
 	 *  s: stopPropagation          : number/undefined
 	 *  i: stopImmediatePropagation : number/undefined
