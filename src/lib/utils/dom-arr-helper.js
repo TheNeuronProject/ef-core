@@ -20,7 +20,7 @@ const DOMARR = {
 		inform()
 		for (let i of items) ARR.push(elements, i.$mount({parent: state, key}))
 		if (this.length === 0) DOM.after(anchor, ...elements)
-		else DOM.after(this[this.length - 1].__EFPLACEHOLDER__, ...elements)
+		else DOM.after(this[this.length - 1].$ctx.placeholder, ...elements)
 		exec()
 		return ARR.push(this, ...items)
 	},

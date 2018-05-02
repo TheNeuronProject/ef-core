@@ -110,7 +110,12 @@ ef.inform()
 
 var state = new module1()
 var state2 = new module1()
-var state3 = new module2()
+var state3 = new (class extends module2 {
+	$mount(...args) {
+		super.$mount(...args)
+		console.log('MMMOUNT!!')
+	}
+})()
 var state4 = new module2(data1)
 
 state3.list1.push(state4)
