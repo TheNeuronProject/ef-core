@@ -5,55 +5,11 @@ import { resolveReactivePath, resolveSubscriber } from './resolver.js'
 import DOM from './utils/dom-helper.js'
 import ARR from './utils/array-helper.js'
 import { assign } from './utils/polyfills.js'
+import mountOptions from '../mount-options.js'
 
 const unsubscribe = (_path, fn, subscribers) => {
 	const subscriberNode = resolveSubscriber(_path, subscribers)
 	ARR.remove(subscriberNode, fn)
-}
-
-const update = function(newState) {
-	inform()
-	const tmpState = assign({}, newState)
-	if (tmpState.$data) {
-		assign(this.$data, tmpState.$data)
-		delete(tmpState.$data)
-	}
-	if (tmpState.$methods) {
-		assign(this.$methods, tmpState.$methods)
-		delete(tmpState.$methods)
-	}
-	assign(this, tmpState)
-	exec()
-}
-
-const destroy = function() {
-	const {$element, __EFPLACEHOLDER__} = this
-	inform()
-	this.$umount()
-	for (let i in this) {
-		this[i] = null
-		delete this[i]
-	}
-	// Push DOM removement operation to query
-	queueDom(() => {
-		DOM.remove($element)
-		DOM.remove(__EFPLACEHOLDER__)
-	})
-
-	// Remove all references for memory recycling
-	delete this.$element
-	delete this.__EFPLACEHOLDER__
-	delete this.$parent
-	delete this.$key
-	delete this.$data
-	delete this.$methods
-	delete this.$refs
-	delete this.$mount
-	delete this.$umount
-	delete this.$subscribe
-	delete this.$unsubscribe
-	// Render
-	return exec()
 }
 
 const state = class {
@@ -87,132 +43,18 @@ const state = class {
 			DOM.before(nodeInfo.placeholder, nodeInfo.element)
 		}
 
-		inform()
-		Object.defineProperties(this, {
-			$element: {
-				get() {
-					return nodeInfo.element
-				},
-				configurable: true
-			},
-			__EFPLACEHOLDER__: {
-				get() {
-					return nodeInfo.placeholder
-				},
-				configurable: true
-			},
-			$parent: {
-				get() {
-					return nodeInfo.parent
-				},
-				configurable: true
-			},
-			$key: {
-				get() {
-					return nodeInfo.key
-				},
-				configurable: true
-			},
-			$methods: {
-				get() {
-					return methods
-				},
-				set(newMethods) {
-					assign(methods, newMethods)
-				},
-				configurable: true
-			},
-			$refs: {
-				value: refs,
-				configurable: true
-			},
-			$mount: {
-				value: function({target, option, parent, key}) {
-					if (typeof target === 'string') target = document.querySelector(target)
+		const ctx = {
+			mount, refs, innerData, methods, handlers,
+			subscribers, nodeInfo, safeZone
+		}
 
-					inform()
-					if (nodeInfo.parent) {
-						this.$umount()
-						if (process.env.NODE_ENV !== 'production') console.warn('[EF]', 'Component detached from previous mounting point.')
-					}
-
-					if (!parent) parent = target
-					if (!key) key = '__DIRECTMOUNT__'
-					nodeInfo.parent = parent
-					nodeInfo.key = key
-					queueDom(mount)
-
-					if (!target) {
-						exec()
-						return nodeInfo.placeholder
-					}
-
-					switch (option) {
-						case 'before': {
-							DOM.before(target, nodeInfo.placeholder)
-							break
-						}
-						case 'after': {
-							DOM.after(target, nodeInfo.placeholder)
-							break
-						}
-						case 'replace': {
-							DOM.before(target, nodeInfo.placeholder)
-							nodeInfo.replace.push(target)
-							break
-						}
-						default: {
-							DOM.append(target, nodeInfo.placeholder)
-						}
-					}
-					return exec()
-				},
-				configurable: true
-			},
-			$umount: {
-				value: function() {
-					const {parent, key} = nodeInfo
-					nodeInfo.parent = null
-					nodeInfo.key = null
-
-					inform()
-					if (parent && key !== '__DIRECTMOUNT__' && parent[key]) {
-						if (Array.isArray(parent[key])) ARR.remove(parent[key], this)
-						else {
-							parent[key] = null
-							return exec()
-						}
-					}
-					DOM.append(safeZone, nodeInfo.placeholder)
-					queueDom(mount)
-					return exec()
-				},
-				configurable: true
-			},
-			$subscribe: {
-				value: (pathStr, subscriber) => {
-					const _path = pathStr.split('.')
-					const { dataNode, subscriberNode, _key } = initBinding({bind: [_path], state: this, handlers, subscribers, innerData})
-					inform()
-					// Execute the subscriber function immediately
-					try {
-						subscriber({state: this, value: dataNode[_key]})
-						// Put the subscriber inside the subscriberNode
-						subscriberNode.push(subscriber)
-					} catch (e) {
-						console.error('[EF]', 'Error caught when registering subscriber:\n', e)
-					}
-					exec()
-				},
-				configurable: true
-			},
-			$unsubscribe: {
-				value: (_path, fn) => {
-					unsubscribe(_path, fn, subscribers)
-				},
-				configurable: true
+		Object.defineProperty(this, '$ctx', {
+			get() {
+				return ctx
 			}
 		})
+
+		inform()
 		// Init root data node
 		resolveReactivePath(['$data'], this, false)
 
@@ -221,12 +63,135 @@ const state = class {
 		queueDom(mount)
 		exec()
 	}
-}
 
-// Add $update and $destroy method
-Object.defineProperties(state.prototype, {
-	$update: {value: update},
-	$destroy: {value: destroy}
-})
+	get $methods() {
+		const { methods } = this.$ctx
+		return methods
+	}
+
+	set $methods(newMethods) {
+		const { methods } = this.$ctx
+		assign(methods, newMethods)
+	}
+
+	get $refs() {
+		return this.$ctx.refs
+	}
+
+	$mount({target, option, parent, key}) {
+		const { nodeInfo, mount } = this.$ctx
+		if (typeof target === 'string') target = document.querySelector(target)
+
+		inform()
+		if (nodeInfo.parent) {
+			this.$umount()
+			if (process.env.NODE_ENV !== 'production') console.warn('[EF]', 'Component detached from previous mounting point.')
+		}
+
+		if (!parent) parent = target
+		if (!key) key = '__DIRECTMOUNT__'
+		nodeInfo.parent = parent
+		nodeInfo.key = key
+		queueDom(mount)
+
+		if (!target) {
+			exec()
+			return nodeInfo.placeholder
+		}
+
+		switch (option) {
+			case mountOptions.BEFORE: {
+				DOM.before(target, nodeInfo.placeholder)
+				break
+			}
+			case mountOptions.AFTER: {
+				DOM.after(target, nodeInfo.placeholder)
+				break
+			}
+			case mountOptions.REPLACE: {
+				DOM.before(target, nodeInfo.placeholder)
+				nodeInfo.replace.push(target)
+				break
+			}
+			case mountOptions.APPEND:
+			default: {
+				DOM.append(target, nodeInfo.placeholder)
+			}
+		}
+		return exec()
+	}
+
+	$umount() {
+		const { nodeInfo, safeZone, mount } = this.$ctx
+		const { parent, key } = nodeInfo
+		nodeInfo.parent = null
+		nodeInfo.key = null
+
+		inform()
+		if (parent && key !== '__DIRECTMOUNT__' && parent[key]) {
+			if (Array.isArray(parent[key])) ARR.remove(parent[key], this)
+			else {
+				parent[key] = null
+				return exec()
+			}
+		}
+		DOM.append(safeZone, nodeInfo.placeholder)
+		queueDom(mount)
+		return exec()
+	}
+
+	$subscribe(pathStr, subscriber) {
+		const { handlers, subscribers, innerData } = this.$ctx
+		const _path = pathStr.split('.')
+		const { dataNode, subscriberNode, _key } = initBinding({bind: [_path], state: this, handlers, subscribers, innerData})
+		inform()
+		// Execute the subscriber function immediately
+		try {
+			subscriber({state: this, value: dataNode[_key]})
+			// Put the subscriber inside the subscriberNode
+			subscriberNode.push(subscriber)
+		} catch (e) {
+			console.error('[EF]', 'Error caught when registering subscriber:\n', e)
+		}
+		exec()
+	}
+
+	$unsubscribe(_path, fn) {
+		const { subscribers } = this.$ctx
+		unsubscribe(_path, fn, subscribers)
+	}
+
+	$update(newState) {
+		inform()
+		const tmpState = assign({}, newState)
+		if (tmpState.$data) {
+			assign(this.$data, tmpState.$data)
+			delete(tmpState.$data)
+		}
+		if (tmpState.$methods) {
+			assign(this.$methods, tmpState.$methods)
+			delete(tmpState.$methods)
+		}
+		assign(this, tmpState)
+		exec()
+	}
+
+	$destroy() {
+		const { nodeInfo } = this.$ctx
+		inform()
+		this.$umount()
+		for (let i in this) {
+			this[i] = null
+			delete this[i]
+		}
+		// Push DOM removement operation to query
+		queueDom(() => {
+			DOM.remove(nodeInfo.element)
+			DOM.remove(nodeInfo.placeholder)
+		})
+		// Render
+		return exec()
+	}
+}
 
 export default state

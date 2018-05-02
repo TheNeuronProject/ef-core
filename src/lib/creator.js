@@ -23,8 +23,8 @@ const bindTextNode = ({node, state, handlers, subscribers, innerData, element}) 
 const updateMountingNode = ({state, children, key, anchor, value}) => {
 	if (children[key] === value) return
 	if (value) {
-		if (value.$parent && process.env.NODE_ENV !== 'production') console.warn('[EF]', 'Better detach the component before attaching it to a new component!')
-		if (value.$element.contains(state.$element)) {
+		if (value.$ctx.nodeInfo.parent && process.env.NODE_ENV !== 'production') console.warn('[EF]', 'Better detach the component before attaching it to a new component!')
+		if (value.$ctx.nodeInfo.element.contains(state.$ctx.nodeInfo.element)) {
 			if (process.env.NODE_ENV !== 'production') console.warn('[EF]', 'Cannot mount a component to it\'s child component!')
 			return
 		}
@@ -60,7 +60,7 @@ const updateMountingList = ({state, children, key, anchor, value}) => {
 	inform()
 	if (children[key]) {
 		for (let j of value) {
-			if (j.$element.contains(state.$element)) {
+			if (j.$ctx.nodeInfo.element.contains(state.$ctx.nodeInfo.element)) {
 				if (process.env.NODE_ENV !== 'production') console.warn('[EF]', 'Cannot mount a component to it\'s child component!')
 				return
 			}
