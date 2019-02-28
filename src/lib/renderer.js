@@ -1,4 +1,4 @@
-import create from './creator.js'
+import {create, nullComponent} from './creator.js'
 import initBinding from './binding.js'
 import { queueDom, inform, exec } from './render-queue.js'
 import { resolveReactivePath, resolveSubscriber } from './resolver.js'
@@ -130,10 +130,7 @@ const state = class {
 		inform()
 		if (parent && key !== '__DIRECTMOUNT__' && parent[key]) {
 			if (Array.isArray(parent[key])) ARR.remove(parent[key], this)
-			else {
-				parent[key] = null
-				return exec()
-			}
+			else parent[key] = nullComponent
 		}
 		DOM.append(safeZone, nodeInfo.placeholder)
 		queueDom(mount)

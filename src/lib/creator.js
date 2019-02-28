@@ -6,6 +6,8 @@ import defineArr from './utils/dom-arr-helper.js'
 import typeOf from './utils/type-of.js'
 import initBinding from './binding.js'
 
+const nullComponent = {}
+
 const bindTextNode = ({node, state, handlers, subscribers, innerData, element}) => {
 	// Data binding text node
 	const textNode = document.createTextNode('')
@@ -22,17 +24,20 @@ const bindTextNode = ({node, state, handlers, subscribers, innerData, element}) 
 
 const updateMountingNode = ({state, children, key, anchor, value}) => {
 	if (children[key] === value) return
-	if (value) {
-		if (value.$ctx.nodeInfo.parent && process.env.NODE_ENV !== 'production') console.warn('[EF]', 'Better detach the component before attaching it to a new component!')
+	if (value && value !== nullComponent) {
+		if (value.$ctx.nodeInfo.parent && process.env.NODE_ENV !== 'production') console.warn('[EF] Better detach the component before attaching it to a new component!')
 		if (value.$ctx.nodeInfo.element.contains(state.$ctx.nodeInfo.element)) {
-			if (process.env.NODE_ENV !== 'production') console.warn('[EF]', 'Cannot mount a component to it\'s child component!')
+			if (process.env.NODE_ENV !== 'production') console.warn('[EF] Cannot mount a component to it\'s child component!')
 			return
 		}
 	}
 
 	inform()
 	// Update component
-	if (children[key]) children[key].$umount()
+	if (children[key]) {
+		if (value === nullComponent) value = null
+		else children[key].$umount()
+	}
 	// Update stored value
 	children[key] = value
 	if (value) value.$mount({target: anchor, parent: state, option: 'before', key})
@@ -136,4 +141,4 @@ const create = ({node, state, innerData, refs, children, handlers, subscribers, 
 	return element
 }
 
-export default create
+export {create, nullComponent}
