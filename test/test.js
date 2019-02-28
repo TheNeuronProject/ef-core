@@ -112,8 +112,12 @@ var state = new module1()
 var state2 = new module1()
 var state3 = new (class extends module2 {
 	$mount(...args) {
-		super.$mount(...args)
 		console.log('MMMOUNT!!')
+		return super.$mount(...args)
+	}
+	$umount(...args) {
+		console.log('UUUMOUNT!!')
+		return super.$umount(...args)
 	}
 })()
 var state4 = new module2(data1)
