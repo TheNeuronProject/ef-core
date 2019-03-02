@@ -1,10 +1,11 @@
-import {create, nullComponent} from './creator.js'
+import { create, nullComponent } from './creator.js'
 import initBinding from './binding.js'
 import { queueDom, inform, exec } from './render-queue.js'
 import { resolveReactivePath, resolveSubscriber } from './resolver.js'
 import DOM from './utils/dom-helper.js'
 import ARR from './utils/array-helper.js'
 import { assign } from './utils/polyfills.js'
+import dbg from './utils/debug.js'
 import mountOptions from '../mount-options.js'
 
 const unsubscribe = (_path, fn, subscribers) => {
@@ -85,7 +86,7 @@ const state = class {
 		inform()
 		if (nodeInfo.parent) {
 			this.$umount()
-			if (process.env.NODE_ENV !== 'production') console.warn('[EF]', 'Component detached from previous mounting point.')
+			if (process.env.NODE_ENV !== 'production') dbg.warn('Component detached from previous mounting point.')
 		}
 
 		if (!parent) parent = target
@@ -148,7 +149,7 @@ const state = class {
 			// Put the subscriber inside the subscriberNode
 			subscriberNode.push(subscriber)
 		} catch (e) {
-			console.error('[EF]', 'Error caught when registering subscriber:\n', e)
+			dbg.error('Error caught when registering subscriber:\n', e)
 		}
 		exec()
 	}

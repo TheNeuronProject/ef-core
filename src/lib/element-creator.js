@@ -3,6 +3,7 @@ import { queue, inform, exec } from './render-queue.js'
 import ARR from './utils/array-helper.js'
 import getEvent from './utils/event-helper.js'
 import { mixVal } from './utils/literals-mix.js'
+import dbg from './utils/debug.js'
 
 const checkValidType = obj => ['number', 'boolean', 'string'].indexOf(typeof obj) > -1
 
@@ -151,7 +152,7 @@ const addEvent = ({element, event, state, handlers, subscribers, innerData}) => 
 		if (i) e.stopImmediatePropagation()
 		if (p) e.preventDefault()
 		if (state.$methods[m]) state.$methods[m]({e, value: _handler(), state})
-		else if (process.env.NODE_ENV !== 'production') console.warn('[EF]', `Method named '${m}' not found! Value been passed is:`, _handler())
+		else if (process.env.NODE_ENV !== 'production') dbg.warn(`Method named '${m}' not found! Value been passed is:`, _handler())
 	}, !!u)
 }
 
