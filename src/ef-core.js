@@ -2,6 +2,7 @@
 import state from './lib/renderer.js'
 import mountOptions from './mount-options.js'
 import { onNextRender, inform, exec, bundle, isPaused } from './lib/render-queue.js'
+import dbg from './lib/utils/debug.js'
 import { version } from '../package.json'
 
 const create = (value) => {
@@ -19,4 +20,4 @@ const create = (value) => {
 
 export { create, onNextRender, inform, exec, bundle, isPaused, mountOptions, version }
 
-if (process.env.NODE_ENV !== 'production') console.info('[EF]', `ef-core v${version} initialized!`)
+if (process.env.NODE_ENV !== 'production') dbg.info(`ef-core v${version} initialized!`)

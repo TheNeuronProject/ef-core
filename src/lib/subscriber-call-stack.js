@@ -1,5 +1,6 @@
 import { inform, exec } from './render-queue.js'
 import ARR from './utils/array-helper.js'
+import dbg from './utils/debug.js'
 
 const subscriberCallStack = []
 
@@ -20,7 +21,7 @@ const execSubscribers = (subscriberNode, data) => {
 	try {
 		for (const subscriber of subscriberNode) subscriber(data)
 	} catch (e) {
-		console.error('[EF]', 'Error caught when executing subscribers:\n', e)
+		dbg.error('Error caught when executing subscribers:\n', e)
 	}
 	exec()
 	// Remove the subscriberNode from the stack so it could be called again
