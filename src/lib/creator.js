@@ -4,6 +4,7 @@ import DOM from './utils/dom-helper.js'
 import ARR from './utils/array-helper.js'
 import defineArr from './utils/dom-arr-helper.js'
 import typeOf from './utils/type-of.js'
+import dbg from './utils/debug.js'
 import initBinding from './binding.js'
 
 const nullComponent = {}
@@ -25,9 +26,9 @@ const bindTextNode = ({node, state, handlers, subscribers, innerData, element}) 
 const updateMountingNode = ({state, children, key, anchor, value}) => {
 	if (children[key] === value) return
 	if (value && value !== nullComponent) {
-		if (value.$ctx.nodeInfo.parent && process.env.NODE_ENV !== 'production') console.warn('[EF] Better detach the component before attaching it to a new component!')
+		if (value.$ctx.nodeInfo.parent && process.env.NODE_ENV !== 'production') dbg.warn('Better detach the component before attaching it to a new component!')
 		if (value.$ctx.nodeInfo.element.contains(state.$ctx.nodeInfo.element)) {
-			if (process.env.NODE_ENV !== 'production') console.warn('[EF] Cannot mount a component to it\'s child component!')
+			if (process.env.NODE_ENV !== 'production') dbg.warn('Cannot mount a component to it\'s child component!')
 			return
 		}
 	}
@@ -66,7 +67,7 @@ const updateMountingList = ({state, children, key, anchor, value}) => {
 	if (children[key]) {
 		for (let j of value) {
 			if (j.$ctx.nodeInfo.element.contains(state.$ctx.nodeInfo.element)) {
-				if (process.env.NODE_ENV !== 'production') console.warn('[EF]', 'Cannot mount a component to it\'s child component!')
+				if (process.env.NODE_ENV !== 'production') dbg.warn('Cannot mount a component to it\'s child component!')
 				return
 			}
 			j.$umount()

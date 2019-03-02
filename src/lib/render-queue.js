@@ -1,4 +1,5 @@
 import ARR from './utils/array-helper.js'
+import dbg from './utils/debug.js'
 
 const modificationQueue = []
 const domQueue = []
@@ -19,14 +20,14 @@ const inform = () => {
 const execModifications = () => {
 	const renderQueue = ARR.unique(modificationQueue)
 	for (let i of renderQueue) i()
-	if (process.env.NODE_ENV !== 'production') console.info('[EF]', `${modificationQueue.length} modification operation(s) cached, ${renderQueue.length} executed.`)
+	if (process.env.NODE_ENV !== 'production') dbg.info(`${modificationQueue.length} modification operation(s) cached, ${renderQueue.length} executed.`)
 	ARR.empty(modificationQueue)
 }
 
 const execDomModifications = () => {
 	const domRenderQueue = ARR.rightUnique(domQueue)
 	for (let i of domRenderQueue) i()
-	if (process.env.NODE_ENV !== 'production') console.info('[EF]', `${domQueue.length} DOM operation(s) cached, ${domRenderQueue.length} executed.`)
+	if (process.env.NODE_ENV !== 'production') dbg.info(`${domQueue.length} DOM operation(s) cached, ${domRenderQueue.length} executed.`)
 	ARR.empty(domQueue)
 }
 
@@ -34,7 +35,7 @@ const execUserQueue = () => {
 	if (userQueue.length === 0) return
 	const userFnQueue = ARR.unique(userQueue)
 	for (let i of userFnQueue) i()
-	if (process.env.NODE_ENV !== 'production') console.info('[EF]', `${userQueue.length} user operation(s) cached, ${userFnQueue.length} executed.`)
+	if (process.env.NODE_ENV !== 'production') dbg.info(`${userQueue.length} user operation(s) cached, ${userFnQueue.length} executed.`)
 	ARR.empty(userQueue)
 }
 
@@ -57,7 +58,7 @@ const bundle = (cb) => {
 	try {
 		return exec(cb(inform, exec))
 	} catch (e) {
-		console.error('[EF]', 'Error caught when executing bundle:\n', e)
+		dbg.error('Error caught when executing bundle:\n', e)
 		return exec()
 	}
 }
