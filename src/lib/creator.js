@@ -132,9 +132,13 @@ const resolveAST = ({node, nodeType, element, state, innerData, refs, children, 
 
 const create = ({node, state, innerData, refs, children, handlers, subscribers, svg, create}) => {
 	const [info, ...childNodes] = node
-	if (!svg && info.t === 'svg') svg = true
+	// Enter SVG mode
+	if (!svg && info.t.toLowerCase() === 'svg') svg = true
 	// First create an element according to the description
 	const element = createElement({info, state, innerData, refs, handlers, subscribers, svg})
+
+	// Leave SVG mode if tag is `foreignObject`
+	if (svg && info.t.toLowerCase() === 'foreignobject') svg = false
 
 	// Append child nodes
 	for (let i of childNodes) resolveAST({node: i, nodeType: typeOf(i), element, state, innerData, refs, children, handlers, subscribers, svg, create})

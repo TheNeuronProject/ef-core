@@ -7,9 +7,16 @@ import dbg from './utils/debug.js'
 
 const checkValidType = obj => ['number', 'boolean', 'string'].indexOf(typeof obj) > -1
 
-// SVG tags require namespace to work properly
+// SVG/MathML tags w/ xlink attributes require specific namespace to work properly
+const svgNS = 'http://www.w3.org/2000/svg'
+const mathNS = 'http://www.w3.org/1998/Math/MathML'
+const xlinkNS = 'http://www.w3.org/1999/xlink'
 const createByTag = (tag, svg) => {
-	if (svg) return document.createElementNS('http://www.w3.org/2000/svg', tag)
+	// SVG is always the most prioritized
+	if (svg) return document.createElementNS(svgNS, tag)
+	// Then MathML
+	if (tag.toLowerCase() === 'math') return document.createElementNS(mathNS, tag)
+	// Then HTML
 	return document.createElement(tag)
 }
 
@@ -92,6 +99,14 @@ const getAttrHandler = (element, key) => {
 		if (!val) return element.removeAttribute(key)
 		element.setAttribute(key, val)
 	}
+
+	// Handle xlink namespace
+	if (key.indexOf('xlink:') === 0) return (val) => {
+		// Remove attribute when value is empty
+		if (val === '') return element.removeAttributeNS(xlinkNS, key)
+		element.setAttributeNS(xlinkNS, key, val)
+	}
+
 	return (val) => {
 		// Remove attribute when value is empty
 		if (val === '') return element.removeAttribute(key)
@@ -100,11 +115,14 @@ const getAttrHandler = (element, key) => {
 }
 
 const addAttr = ({element, attr, key, state, handlers, subscribers, innerData}) => {
-	if (checkValidType(attr)) element.setAttribute(key, attr)
-	else {
-		const handler = getAttrHandler(element, key)
-		queue([regTmpl({val: attr, state, handlers, subscribers, innerData, handler})])
+	if (checkValidType(attr)) {
+		// Handle xlink namespace
+		if (key.indexOf('xlink:') === 0) return element.setAttributeNS(xlinkNS, key, attr)
+		return element.setAttribute(key, attr)
 	}
+
+	const handler = getAttrHandler(element, key)
+	queue([regTmpl({val: attr, state, handlers, subscribers, innerData, handler})])
 }
 
 const addProp = ({element, prop, key, state, handlers, subscribers, innerData}) => {
