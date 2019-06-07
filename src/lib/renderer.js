@@ -1,4 +1,4 @@
-import { create, nullComponent } from './creator.js'
+import { create, nullComponent, checkDestroyed } from './creator.js'
 import initBinding from './binding.js'
 import { queueDom, inform, exec } from './render-queue.js'
 import { resolveSubscriber } from './resolver.js'
@@ -12,10 +12,6 @@ const unsubscribe = (pathStr, fn, subscribers) => {
 	const subscriberNode = resolveSubscriber(pathStr, subscribers)
 	ARR.remove(subscriberNode, fn)
 }
-
-// const checkDestroied = (state) => {
-// 	if (!state.$ctx) throw new Error('[EF] This component has been destroied!')
-// }
 
 const state = class {
 	constructor (ast) {
@@ -70,28 +66,34 @@ const state = class {
 	}
 
 	get $data() {
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		return this.$ctx.data
 	}
 
 	set $data(newData) {
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		inform()
 		assign(this.$ctx.data, newData)
 		exec()
 	}
 
 	get $methods() {
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		return this.$ctx.methods
 	}
 
 	set $methods(newMethods) {
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		this.$ctx.methods = newMethods
 	}
 
 	get $refs() {
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		return this.$ctx.refs
 	}
 
 	$mount({target, option, parent, key}) {
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		const { nodeInfo, mount } = this.$ctx
 		if (typeof target === 'string') target = document.querySelector(target)
 
@@ -135,6 +137,7 @@ const state = class {
 	}
 
 	$umount() {
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		const { nodeInfo, safeZone, mount } = this.$ctx
 		const { parent, key } = nodeInfo
 		nodeInfo.parent = null
@@ -151,6 +154,7 @@ const state = class {
 	}
 
 	$subscribe(pathStr, subscriber) {
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		const ctx = this.$ctx
 		const { handlers, subscribers, innerData } = ctx
 		const _path = pathStr.split('.')
@@ -168,25 +172,24 @@ const state = class {
 	}
 
 	$unsubscribe(pathStr, fn) {
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		const { subscribers } = this.$ctx
 		unsubscribe(pathStr, fn, subscribers)
 	}
 
 	$update(newState) {
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		inform()
 		assign(this, newState)
 		exec()
 	}
 
 	$destroy() {
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		const { nodeInfo } = this.$ctx
-		delete this.$ctx
 		inform()
 		this.$umount()
-		for (let i in this) {
-			this[i] = null
-			delete this[i]
-		}
+		delete this.$ctx
 		// Push DOM removement operation to query
 		queueDom(() => {
 			DOM.remove(nodeInfo.element)

@@ -10,6 +10,10 @@ import mountOptions from '../mount-options.js'
 
 const nullComponent = Object.create(null)
 
+const checkDestroyed = (state) => {
+	if (!state.$ctx) throw new Error('[EF] This component has been destroied!')
+}
+
 const bindTextNode = ({node, ctx, handlers, subscribers, innerData, element}) => {
 	// Data binding text node
 	const textNode = document.createTextNode('')
@@ -82,9 +86,11 @@ const mountingPointUpdaters = [
 const applyMountingPoint = (type, key, proto) => {
 	Object.defineProperty(proto, key, {
 		get() {
+			if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 			return this.$ctx.children[key].node
 		},
 		set(value) {
+			if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 			const ctx = this.$ctx
 			mountingPointUpdaters[type]({ctx, key, value})
 		},
@@ -150,4 +156,4 @@ const create = ({node, ctx, innerData, refs, handlers, subscribers, svg, create}
 	return element
 }
 
-export {create, nullComponent, applyMountingPoint}
+export {create, nullComponent, checkDestroyed, applyMountingPoint}
