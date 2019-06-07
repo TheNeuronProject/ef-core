@@ -18,10 +18,7 @@ const DOMARR = {
 	push({ctx, key, anchor}, ...items) {
 		const elements = []
 		inform()
-		for (let i of items) {
-			if
-			ARR.push(elements, i.$mount({parent: ctx.state, key}))
-		}
+		for (let i of items) ARR.push(elements, i.$mount({parent: ctx.state, key}))
 		if (this.length === 0) DOM.after(anchor, ...elements)
 		else DOM.after(this[this.length - 1].$ctx.nodeInfo.placeholder, ...elements)
 		exec()
@@ -78,9 +75,7 @@ const DOMARR = {
 		if (this.length === 0) return this.push(...items).length
 		const elements = []
 		inform()
-		for (let i of items) {
-			ARR.push(elements, i.$mount({parent: ctx.state, key}))
-		}
+		for (let i of items) ARR.push(elements, i.$mount({parent: ctx.state, key}))
 		DOM.after(anchor, ...elements)
 		exec()
 		return ARR.unshift(this, ...items)
