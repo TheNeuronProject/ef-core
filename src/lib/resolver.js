@@ -39,12 +39,13 @@ const resolveReactivePath = (_path, obj, enume) => {
 	return obj
 }
 
-const resolve = ({ _path, _key, data, handlers, subscribers, innerData }) => {
+const resolve = ({_path, _key, data, handlers, subscribers, innerData}) => {
 	const parentNode = resolveReactivePath(_path, data, true)
 	const {handlerNode, subscriberNode, dataNode} = resolveAllPath({_path, handlers, subscribers, innerData})
 	if (!handlerNode[_key]) handlerNode[_key] = []
 	if (!subscriberNode[_key]) subscriberNode[_key] = []
-	if (!Object.prototype.hasOwnProperty.call(dataNode, _key)) dataNode[_key] = ''
+	/* eslint no-undefined: "off" */
+	if (!Object.prototype.hasOwnProperty.call(dataNode, _key)) dataNode[_key] = undefined
 	return { parentNode, handlerNode: handlerNode[_key], subscriberNode: subscriberNode[_key], dataNode }
 }
 

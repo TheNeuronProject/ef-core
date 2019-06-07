@@ -1,22 +1,27 @@
 import { create, nullComponent } from './creator.js'
 import initBinding from './binding.js'
 import { queueDom, inform, exec } from './render-queue.js'
-import { resolveReactivePath, resolveSubscriber } from './resolver.js'
+import { resolveSubscriber } from './resolver.js'
 import DOM from './utils/dom-helper.js'
 import ARR from './utils/array-helper.js'
 import { assign } from './utils/polyfills.js'
 import dbg from './utils/debug.js'
 import mountOptions from '../mount-options.js'
 
-const unsubscribe = (_path, fn, subscribers) => {
-	const subscriberNode = resolveSubscriber(_path, subscribers)
+const unsubscribe = (pathStr, fn, subscribers) => {
+	const subscriberNode = resolveSubscriber(pathStr, subscribers)
 	ARR.remove(subscriberNode, fn)
 }
+
+// const checkDestroied = (state) => {
+// 	if (!state.$ctx) throw new Error('[EF] This component has been destroied!')
+// }
 
 const state = class {
 	constructor (ast) {
 		const children = {}
 		const refs = {}
+		const data = {}
 		const innerData = {}
 		const methods = {}
 		const handlers = {}
@@ -45,34 +50,41 @@ const state = class {
 		}
 
 		const ctx = {
-			mount, refs, innerData, methods, handlers,
-			subscribers, nodeInfo, safeZone
+			mount, refs, data, innerData, methods,
+			handlers, subscribers, nodeInfo, safeZone,
+			children, state: this
 		}
 
 		Object.defineProperty(this, '$ctx', {
-			get() {
-				return ctx
-			}
+			value: ctx,
+			enumerable: false,
+			configurable: true
 		})
 
 		inform()
-		// Init root data node
-		resolveReactivePath(['$data'], this, false)
 
-		nodeInfo.element = create({node: ast, state: this, innerData, refs, children, handlers, subscribers, svg: false, create})
+		nodeInfo.element = create({node: ast, ctx, innerData, refs, handlers, subscribers, svg: false, create})
 		DOM.append(safeZone, nodeInfo.placeholder)
 		queueDom(mount)
 		exec()
 	}
 
+	get $data() {
+		return this.$ctx.data
+	}
+
+	set $data(newData) {
+		inform()
+		assign(this.$ctx.data, newData)
+		exec()
+	}
+
 	get $methods() {
-		const { methods } = this.$ctx
-		return methods
+		return this.$ctx.methods
 	}
 
 	set $methods(newMethods) {
-		const { methods } = this.$ctx
-		assign(methods, newMethods)
+		this.$ctx.methods = newMethods
 	}
 
 	get $refs() {
@@ -139,9 +151,10 @@ const state = class {
 	}
 
 	$subscribe(pathStr, subscriber) {
-		const { handlers, subscribers, innerData } = this.$ctx
+		const ctx = this.$ctx
+		const { handlers, subscribers, innerData } = ctx
 		const _path = pathStr.split('.')
-		const { dataNode, subscriberNode, _key } = initBinding({bind: [_path], state: this, handlers, subscribers, innerData})
+		const { dataNode, subscriberNode, _key } = initBinding({bind: [_path], ctx, handlers, subscribers, innerData})
 		inform()
 		// Execute the subscriber function immediately
 		try {
@@ -154,28 +167,20 @@ const state = class {
 		exec()
 	}
 
-	$unsubscribe(_path, fn) {
+	$unsubscribe(pathStr, fn) {
 		const { subscribers } = this.$ctx
-		unsubscribe(_path, fn, subscribers)
+		unsubscribe(pathStr, fn, subscribers)
 	}
 
 	$update(newState) {
 		inform()
-		const tmpState = assign({}, newState)
-		if (tmpState.$data) {
-			assign(this.$data, tmpState.$data)
-			delete(tmpState.$data)
-		}
-		if (tmpState.$methods) {
-			assign(this.$methods, tmpState.$methods)
-			delete(tmpState.$methods)
-		}
-		assign(this, tmpState)
+		assign(this, newState)
 		exec()
 	}
 
 	$destroy() {
 		const { nodeInfo } = this.$ctx
+		delete this.$ctx
 		inform()
 		this.$umount()
 		for (let i in this) {
@@ -190,6 +195,12 @@ const state = class {
 		// Render
 		return exec()
 	}
+}
+
+// Workaround for bug of buble
+// https://github.com/bublejs/buble/issues/197
+for (let i of ['$mount', '$umount', '$subscribe', '$unsubscribe', '$update', '$destroy']) {
+	Object.defineProperty(state.prototype, i, {enumerable: false})
 }
 
 export default state

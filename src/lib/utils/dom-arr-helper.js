@@ -15,10 +15,13 @@ const DOMARR = {
 		poped.$umount()
 		return poped
 	},
-	push({state, key, anchor}, ...items) {
+	push({ctx, key, anchor}, ...items) {
 		const elements = []
 		inform()
-		for (let i of items) ARR.push(elements, i.$mount({parent: state, key}))
+		for (let i of items) {
+			if
+			ARR.push(elements, i.$mount({parent: ctx.state, key}))
+		}
 		if (this.length === 0) DOM.after(anchor, ...elements)
 		else DOM.after(this[this.length - 1].$ctx.nodeInfo.placeholder, ...elements)
 		exec()
@@ -29,14 +32,14 @@ const DOMARR = {
 		item.$umount()
 		return item
 	},
-	reverse({state, key, anchor}) {
+	reverse({ctx, key, anchor}) {
 		if (this.length === 0) return this
 		const tempArr = ARR.copy(this)
 		const elements = []
 		inform()
 		for (let i = tempArr.length - 1; i >= 0; i--) {
 			tempArr[i].$umount()
-			ARR.push(elements, tempArr[i].$mount({parent: state, key}))
+			ARR.push(elements, tempArr[i].$mount({parent: ctx.state, key}))
 		}
 		ARR.push(this, ...ARR.reverse(tempArr))
 		DOM.after(anchor, ...elements)
@@ -49,14 +52,14 @@ const DOMARR = {
 		shifted.$umount()
 		return shifted
 	},
-	sort({state, key, anchor}, fn) {
+	sort({ctx, key, anchor}, fn) {
 		if (this.length === 0) return this
 		const sorted = ARR.copy(ARR.sort(this, fn))
 		const elements = []
 		inform()
 		for (let i of sorted) {
 			i.$umount()
-			ARR.push(elements, i.$mount({parent: state, key}))
+			ARR.push(elements, i.$mount({parent: ctx.state, key}))
 		}
 		ARR.push(this, ...sorted)
 		DOM.after(anchor, ...elements)
@@ -71,11 +74,13 @@ const DOMARR = {
 		exec()
 		return spliced
 	},
-	unshift({state, key, anchor}, ...items) {
+	unshift({ctx, key, anchor}, ...items) {
 		if (this.length === 0) return this.push(...items).length
 		const elements = []
 		inform()
-		for (let i of items) ARR.push(elements, i.$mount({parent: state, key}))
+		for (let i of items) {
+			ARR.push(elements, i.$mount({parent: ctx.state, key}))
+		}
 		DOM.after(anchor, ...elements)
 		exec()
 		return ARR.unshift(this, ...items)
