@@ -19,6 +19,11 @@ const bindTextNode = ({node, ctx, handlers, subscribers, innerData, element}) =>
 	const textNode = document.createTextNode('')
 	const { dataNode, handlerNode, _key } = initBinding({bind: node, ctx, handlers, subscribers, innerData})
 	const handler = () => {
+		const value = dataNode[_key]
+		if (typeof value === 'undefined') {
+			textNode.textContent = ''
+			return
+		}
 		textNode.textContent = dataNode[_key]
 	}
 	handlerNode.push(handler)
@@ -108,21 +113,28 @@ const bindMountingList = ({ctx, key, children, anchor}) => {
 	}
 }
 
+// Walk through the AST to perform proper actions
 const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, subscribers, svg, create}) => {
 	switch (nodeType) {
+		// Static text node
 		case 'string': {
-			// Static text node
 			DOM.append(element, document.createTextNode(node))
 			break
 		}
+		// Child element or a dynamic text node
 		case 'array': {
+			// Recursive call for child element
 			if (typeOf(node[0]) === 'object') DOM.append(element, create({node, ctx, innerData, refs, handlers, subscribers, svg, create}))
+			// Dynamic text node
 			else bindTextNode({node, ctx, handlers, subscribers, innerData, element})
 			break
 		}
+		// Mounting points
 		case 'object': {
 			const anchor = document.createTextNode('')
+			// Single node mounting point
 			if (node.t === 0) bindMountingNode({key: node.n, children: ctx.children, anchor})
+			// Multi node mounting point
 			else bindMountingList({ctx, key: node.n, children: ctx.children, anchor})
 			// Append anchor
 			DOM.append(element, anchor)
@@ -139,6 +151,7 @@ const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, su
 	}
 }
 
+// Create elements based on description from AST
 const create = ({node, ctx, innerData, refs, handlers, subscribers, svg, create}) => {
 	const [info, ...childNodes] = node
 	// Enter SVG mode

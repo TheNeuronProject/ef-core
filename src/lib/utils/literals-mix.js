@@ -1,6 +1,9 @@
 const mixStr = (strs, ...exprs) => {
 	let string = ''
-	for (let i = 0; i < exprs.length; i++) string += (strs[i] + exprs[i])
+	for (let i = 0; i < exprs.length; i++) {
+		if (typeof exprs[i] === 'undefined') string += strs[i]
+		else string += (strs[i] + exprs[i])
+	}
 	return string + strs[strs.length - 1]
 }
 
