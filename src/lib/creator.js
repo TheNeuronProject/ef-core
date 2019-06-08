@@ -11,7 +11,7 @@ import mountOptions from '../mount-options.js'
 const nullComponent = Object.create(null)
 
 const checkDestroyed = (state) => {
-	if (!state.$ctx) throw new Error('[EF] This component has been destroied!')
+	if (!state.$ctx) throw new Error('[EF] This component has been destroyed!')
 }
 
 const bindTextNode = ({node, ctx, handlers, subscribers, innerData, element}) => {
@@ -55,24 +55,23 @@ const updateMountingNode = ({ctx, key, value}) => {
 
 const updateMountingList = ({ctx, key, value}) => {
 	const {children} = ctx
-	const child = children[key]
-	const {anchor} = child
-	if (child && ARR.equals(child, value)) return
+	const {anchor, node} = children[key]
+	if (ARR.equals(node, value)) return
 	if (value) value = ARR.copy(value)
 	else value = []
 	const fragment = document.createDocumentFragment()
 	// Update components
 	inform()
-	if (child) {
+	if (node) {
+		node.clear()
 		for (let item of value) {
 			item.$umount()
 			DOM.append(fragment, item.$mount({parent: ctx.state, key}))
 		}
-		for (let item of ARR.copy(child)) item.$umount()
 	} else for (let item of value) DOM.append(fragment, item.$mount({parent: ctx.state, key}))
 	// Update stored value
-	child.length = 0
-	ARR.push(child, ...value)
+	node.length = 0
+	ARR.push(node, ...value)
 	// Append to current component
 	DOM.after(anchor, fragment)
 	exec()

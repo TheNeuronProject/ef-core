@@ -5,6 +5,7 @@ import { resolveSubscriber } from './resolver.js'
 import DOM from './utils/dom-helper.js'
 import ARR from './utils/array-helper.js'
 import { assign } from './utils/polyfills.js'
+import typeOf from './utils/type-of.js'
 import dbg from './utils/debug.js'
 import mountOptions from '../mount-options.js'
 
@@ -189,6 +190,12 @@ const state = class {
 		const { nodeInfo } = this.$ctx
 		inform()
 		this.$umount()
+		// Detatch all mounted components
+		for (let i in this) {
+			if (typeOf(this[i]) === 'array') this[i].clear()
+			else this[i] = null
+		}
+		// Remove context
 		delete this.$ctx
 		// Push DOM removement operation to query
 		queueDom(() => {

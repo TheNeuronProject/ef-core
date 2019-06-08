@@ -9,6 +9,12 @@ const DOMARR = {
 		exec()
 		ARR.empty(this)
 	},
+	clear() {
+		inform()
+		for (let i of ARR.copy(this)) i.$umount()
+		exec()
+		ARR.empty(this)
+	},
 	pop() {
 		if (this.length === 0) return
 		const poped = ARR.pop(this)
@@ -85,6 +91,7 @@ const DOMARR = {
 const defineArr = (arr, info) => {
 	Object.defineProperties(arr, {
 		empty: {value: DOMARR.empty},
+		clear: {value: DOMARR.clear},
 		pop: {value: DOMARR.pop},
 		push: {value: DOMARR.push.bind(arr, info)},
 		remove: {value: DOMARR.remove},
