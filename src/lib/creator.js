@@ -36,21 +36,14 @@ const bindTextNode = ({node, ctx, handlers, subscribers, innerData, element}) =>
 const updateMountingNode = ({ctx, key, value}) => {
 	const {children} = ctx
 	const child = children[key]
-	const {anchor} = child
-	if (child.node === value) return
-	if (value && value !== nullComponent) {
-		if (value.$ctx.nodeInfo.parent && process.env.NODE_ENV !== 'production') dbg.warn('Better detach the component before attaching it to a new component!')
-		if (value.$ctx.nodeInfo.element.contains(ctx.nodeInfo.element)) {
-			if (process.env.NODE_ENV !== 'production') dbg.warn('Cannot mount a component to it\'s child component!')
-			return
-		}
-	}
+	const {anchor, node} = child
+	if (node === value) return
 
 	inform()
 	// Update component
-	if (child.node) {
+	if (node) {
 		if (value === nullComponent) value = null
-		else child.node.$umount()
+		else node.$umount()
 	}
 	// Update stored value
 	child.node = value
