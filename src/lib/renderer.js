@@ -4,7 +4,7 @@ import { queueDom, inform, exec } from './render-queue.js'
 import { resolveSubscriber } from './resolver.js'
 import DOM from './utils/dom-helper.js'
 import ARR from './utils/array-helper.js'
-import { assign } from './utils/polyfills.js'
+import { assign, legacyAssign } from './utils/polyfills.js'
 import typeOf from './utils/type-of.js'
 import dbg from './utils/debug.js'
 import mountOptions from '../mount-options.js'
@@ -181,7 +181,7 @@ const state = class {
 	$update(newState) {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		inform()
-		assign(this, newState)
+		legacyAssign(this, newState)
 		exec()
 	}
 
