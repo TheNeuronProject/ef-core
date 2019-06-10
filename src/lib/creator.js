@@ -4,7 +4,6 @@ import DOM from './utils/dom-helper.js'
 import ARR from './utils/array-helper.js'
 import defineArr from './utils/dom-arr-helper.js'
 import typeOf from './utils/type-of.js'
-import dbg from './utils/debug.js'
 import initBinding from './binding.js'
 import mountOptions from '../mount-options.js'
 
