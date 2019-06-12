@@ -6,4 +6,4 @@ const legacyAssign = (ee, er) => {
 
 const assign = Object.assign || legacyAssign
 
-export { assign, legacyAssign }
+export {assign, legacyAssign}

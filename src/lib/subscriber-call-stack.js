@@ -1,4 +1,4 @@
-import { inform, exec } from './render-queue.js'
+import {inform, exec} from './render-queue.js'
 import ARR from './utils/array-helper.js'
 import dbg from './utils/debug.js'
 
@@ -28,4 +28,4 @@ const execSubscribers = (subscriberNode, data) => {
 	popStack(subscriberNode)
 }
 
-export { subscriberCallStack, checkStack, pushStack, popStack, execSubscribers }
+export {subscriberCallStack, checkStack, pushStack, popStack, execSubscribers}
