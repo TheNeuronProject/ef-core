@@ -53,11 +53,7 @@ const create = (value) => {
 }
 
 // Make a helper component for text fragments
-const TextFragment = class extends registerProps(create([{t: 0},[['text']]]), {text: {}}) {
-	constructor(text) {
-		super({text})
-	}
-}
+const TextFragment = registerProps(create([{t: 0},[['text']]]), {text: {}})
 
 export {create, TextFragment, createElement, Fragment, onNextRender, inform, exec, bundle, isPaused, mountOptions, version}
 
