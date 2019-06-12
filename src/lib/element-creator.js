@@ -1,8 +1,9 @@
 import initBinding from './binding.js'
-import { queue, inform, exec } from './render-queue.js'
+import {queue, inform, exec} from './render-queue.js'
 import ARR from './utils/array-helper.js'
+import {EFFragment} from './utils/dom-helper.js'
 import getEvent from './utils/event-helper.js'
-import { mixVal } from './utils/literals-mix.js'
+import {mixVal} from './utils/literals-mix.js'
 import dbg from './utils/debug.js'
 
 const checkValidType = obj => ['number', 'boolean', 'string'].indexOf(typeof obj) > -1
@@ -29,13 +30,13 @@ const getElement = ({tag, ref, refs, svg}) => {
 	return element
 }
 
-const regTmpl = ({val, state, handlers, subscribers, innerData, handler}) => {
+const regTmpl = ({val, ctx, handlers, subscribers, innerData, handler}) => {
 	if (Array.isArray(val)) {
 		const [strs, ...exprs] = val
 		const tmpl = [strs]
 		const _handler = () => handler(mixVal(...tmpl))
 		tmpl.push(...exprs.map((item) => {
-			const {dataNode, handlerNode, _key} = initBinding({bind: item, state, handlers, subscribers, innerData})
+			const {dataNode, handlerNode, _key} = initBinding({bind: item, ctx, handlers, subscribers, innerData})
 			handlerNode.push(_handler)
 			return {dataNode, _key}
 		}))
@@ -54,8 +55,8 @@ const updateOthers = ({parentNode, handlerNode, _handler, _key, value}) => {
 	ARR.push(handlerNode, _handler)
 }
 
-const addValListener = ({_handler, state, handlers, subscribers, innerData, element, key, expr}) => {
-	const {parentNode, handlerNode, _key} = initBinding({bind: expr, state, handlers, subscribers, innerData})
+const addValListener = ({_handler, ctx, handlers, subscribers, innerData, element, key, expr}) => {
+	const {parentNode, handlerNode, _key} = initBinding({bind: expr, ctx, handlers, subscribers, innerData})
 	const _update = () => updateOthers({parentNode, handlerNode, _handler, _key, value: element.value})
 	if (key === 'value') {
 		// Listen to input, keyup and change events in order to work in most browsers.
@@ -114,7 +115,7 @@ const getAttrHandler = (element, key) => {
 	}
 }
 
-const addAttr = ({element, attr, key, state, handlers, subscribers, innerData}) => {
+const addAttr = ({element, attr, key, ctx, handlers, subscribers, innerData}) => {
 	if (checkValidType(attr)) {
 		// Handle xlink namespace
 		if (key.indexOf('xlink:') === 0) return element.setAttributeNS(xlinkNS, key, attr)
@@ -122,19 +123,19 @@ const addAttr = ({element, attr, key, state, handlers, subscribers, innerData}) 
 	}
 
 	const handler = getAttrHandler(element, key)
-	queue([regTmpl({val: attr, state, handlers, subscribers, innerData, handler})])
+	queue([regTmpl({val: attr, ctx, handlers, subscribers, innerData, handler})])
 }
 
-const addProp = ({element, prop, key, state, handlers, subscribers, innerData}) => {
+const addProp = ({element, prop, key, ctx, handlers, subscribers, innerData}) => {
 	if (checkValidType(prop)) element[key] = prop
 	else {
 		const handler = (val) => {
 			element[key] = val
 		}
-		const _handler = regTmpl({val: prop, state, handlers, subscribers, innerData, handler})
+		const _handler = regTmpl({val: prop, ctx, handlers, subscribers, innerData, handler})
 		if ((key === 'value' ||
 			key === 'checked') &&
-			!prop[0]) addValListener({_handler, state, handlers, subscribers, innerData, element, key, expr: prop[1]})
+			!prop[0]) addValListener({_handler, ctx, handlers, subscribers, innerData, element, key, expr: prop[1]})
 		queue([_handler])
 	}
 }
@@ -142,7 +143,7 @@ const addProp = ({element, prop, key, state, handlers, subscribers, innerData}) 
 
 const rawHandler = val => val
 
-const addEvent = ({element, event, state, handlers, subscribers, innerData}) => {
+const addEvent = ({element, event, ctx, handlers, subscribers, innerData}) => {
 
 	/**
 	 *  l: listener                 : string
@@ -159,7 +160,7 @@ const addEvent = ({element, event, state, handlers, subscribers, innerData}) => 
 	 *  v: value                    : string/array/undefined
 	 */
 	const {l, m, s, i, p, h, a, c, t, u, k, v} = event
-	const _handler = regTmpl({val: v, state, handlers, subscribers, innerData, handler: rawHandler})
+	const _handler = regTmpl({val: v, ctx, handlers, subscribers, innerData, handler: rawHandler})
 	element.addEventListener(l, (e) => {
 		if (!!h !== !!e.shiftKey ||
 			!!a !== !!e.altKey ||
@@ -169,25 +170,26 @@ const addEvent = ({element, event, state, handlers, subscribers, innerData}) => 
 		if (s) e.stopPropagation()
 		if (i) e.stopImmediatePropagation()
 		if (p) e.preventDefault()
-		if (state.$methods[m]) state.$methods[m]({e, value: _handler(), state})
+		if (ctx.methods[m]) ctx.methods[m]({e, value: _handler(), state: ctx.state})
 		else if (process.env.NODE_ENV !== 'production') dbg.warn(`Method named '${m}' not found! Value been passed is:`, _handler())
 	}, !!u)
 }
 
-const createElement = ({info, state, innerData, refs, handlers, subscribers, svg}) => {
+const createElement = ({info, ctx, innerData, refs, handlers, subscribers, svg}) => {
 
 	/**
-	 *  t: tag       : string
+	 *  t: tag       : string | int, 0 means fragment
 	 *  a: attr      : object
 	 *  p: prop      : object
 	 *  e: event     : array
 	 *  r: reference : string
 	 */
 	const {t, a, p, e, r} = info
+	if (t === 0) return new EFFragment()
 	const element = getElement({tag: t, ref: r, refs, svg})
-	for (let i in a) addAttr({element, attr: a[i], key: i, state, handlers, subscribers, innerData})
-	for (let i in p) addProp({element, prop: p[i], key: i, state, handlers, subscribers, innerData})
-	for (let i in e) addEvent({element, event: e[i], state, handlers, subscribers, innerData})
+	for (let i in a) addAttr({element, attr: a[i], key: i, ctx, handlers, subscribers, innerData})
+	for (let i in p) addProp({element, prop: p[i], key: i, ctx, handlers, subscribers, innerData})
+	for (let i in e) addEvent({element, event: e[i], ctx, handlers, subscribers, innerData})
 	return element
 }
 
