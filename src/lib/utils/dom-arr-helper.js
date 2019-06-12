@@ -1,6 +1,6 @@
-import DOM from './dom-helper.js'
+import {DOM} from './dom-helper.js'
 import ARR from './array-helper.js'
-import { inform, exec } from '../render-queue.js'
+import {inform, exec} from '../render-queue.js'
 
 const DOMARR = {
 	empty() {

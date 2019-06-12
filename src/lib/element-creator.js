@@ -1,8 +1,9 @@
 import initBinding from './binding.js'
-import { queue, inform, exec } from './render-queue.js'
+import {queue, inform, exec} from './render-queue.js'
 import ARR from './utils/array-helper.js'
+import {EFFragment} from './utils/dom-helper.js'
 import getEvent from './utils/event-helper.js'
-import { mixVal } from './utils/literals-mix.js'
+import {mixVal} from './utils/literals-mix.js'
 import dbg from './utils/debug.js'
 
 const checkValidType = obj => ['number', 'boolean', 'string'].indexOf(typeof obj) > -1
@@ -177,13 +178,14 @@ const addEvent = ({element, event, ctx, handlers, subscribers, innerData}) => {
 const createElement = ({info, ctx, innerData, refs, handlers, subscribers, svg}) => {
 
 	/**
-	 *  t: tag       : string
+	 *  t: tag       : string | int, 0 means fragment
 	 *  a: attr      : object
 	 *  p: prop      : object
 	 *  e: event     : array
 	 *  r: reference : string
 	 */
 	const {t, a, p, e, r} = info
+	if (t === 0) return new EFFragment()
 	const element = getElement({tag: t, ref: r, refs, svg})
 	for (let i in a) addAttr({element, attr: a[i], key: i, ctx, handlers, subscribers, innerData})
 	for (let i in p) addProp({element, prop: p[i], key: i, ctx, handlers, subscribers, innerData})
