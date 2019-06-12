@@ -4,16 +4,25 @@ import DOM from './utils/dom-helper.js'
 import ARR from './utils/array-helper.js'
 import defineArr from './utils/dom-arr-helper.js'
 import typeOf from './utils/type-of.js'
-import dbg from './utils/debug.js'
 import initBinding from './binding.js'
+import mountOptions from '../mount-options.js'
 
-const nullComponent = {}
+const nullComponent = Object.create(null)
 
-const bindTextNode = ({node, state, handlers, subscribers, innerData, element}) => {
+const checkDestroyed = (state) => {
+	if (!state.$ctx) throw new Error('[EF] This component has been destroyed!')
+}
+
+const bindTextNode = ({node, ctx, handlers, subscribers, innerData, element}) => {
 	// Data binding text node
 	const textNode = document.createTextNode('')
-	const { dataNode, handlerNode, _key } = initBinding({bind: node, state, handlers, subscribers, innerData})
+	const { dataNode, handlerNode, _key } = initBinding({bind: node, ctx, handlers, subscribers, innerData})
 	const handler = () => {
+		const value = dataNode[_key]
+		if (typeof value === 'undefined') {
+			textNode.textContent = ''
+			return
+		}
 		textNode.textContent = dataNode[_key]
 	}
 	handlerNode.push(handler)
@@ -23,98 +32,102 @@ const bindTextNode = ({node, state, handlers, subscribers, innerData, element}) 
 	DOM.append(element, textNode)
 }
 
-const updateMountingNode = ({state, children, key, anchor, value}) => {
-	if (children[key] === value) return
-	if (value && value !== nullComponent) {
-		if (value.$ctx.nodeInfo.parent && process.env.NODE_ENV !== 'production') dbg.warn('Better detach the component before attaching it to a new component!')
-		if (value.$ctx.nodeInfo.element.contains(state.$ctx.nodeInfo.element)) {
-			if (process.env.NODE_ENV !== 'production') dbg.warn('Cannot mount a component to it\'s child component!')
-			return
-		}
-	}
+const updateMountingNode = ({ctx, key, value}) => {
+	const {children} = ctx
+	const child = children[key]
+	const {anchor, node} = child
+	if (node === value) return
 
 	inform()
 	// Update component
-	if (children[key]) {
+	if (node) {
 		if (value === nullComponent) value = null
-		else children[key].$umount()
+		else node.$umount()
 	}
 	// Update stored value
-	children[key] = value
-	if (value) value.$mount({target: anchor, parent: state, option: 'before', key})
+	child.node = value
+	if (value) value.$mount({target: anchor, parent: ctx.state, option: mountOptions.BEFORE, key})
 	exec()
 }
 
-const bindMountingNode = ({state, key, children, anchor}) => {
-	Object.defineProperty(state, key, {
-		get() {
-			return children[key]
-		},
-		set(value) {
-			updateMountingNode({state, children, key, anchor, value})
-		},
-		enumerable: true,
-		configurable: true
-	})
-}
-
-const updateMountingList = ({state, children, key, anchor, value}) => {
+const updateMountingList = ({ctx, key, value}) => {
+	const {children} = ctx
+	const {anchor, node} = children[key]
+	if (ARR.equals(node, value)) return
 	if (value) value = ARR.copy(value)
 	else value = []
 	const fragment = document.createDocumentFragment()
 	// Update components
 	inform()
-	if (children[key]) {
-		for (let j of value) {
-			if (j.$ctx.nodeInfo.element.contains(state.$ctx.nodeInfo.element)) {
-				if (process.env.NODE_ENV !== 'production') dbg.warn('Cannot mount a component to it\'s child component!')
-				return
-			}
-			j.$umount()
-			DOM.append(fragment, j.$mount({parent: state, key}))
+	if (node) {
+		node.clear()
+		for (let item of value) {
+			item.$umount()
+			DOM.append(fragment, item.$mount({parent: ctx.state, key}))
 		}
-		for (let j of ARR.copy(children[key])) j.$umount()
-	} else for (let j of value) DOM.append(fragment, j.$mount({parent: state, key}))
+	} else for (let item of value) DOM.append(fragment, item.$mount({parent: ctx.state, key}))
 	// Update stored value
-	children[key].length = 0
-	ARR.push(children[key], ...value)
+	node.length = 0
+	ARR.push(node, ...value)
 	// Append to current component
 	DOM.after(anchor, fragment)
 	exec()
 }
 
-const bindMountingList = ({state, key, children, anchor}) => {
-	children[key] = defineArr([], {state, key, anchor})
-	Object.defineProperty(state, key, {
+const mountingPointUpdaters = [
+	updateMountingNode,
+	updateMountingList
+]
+
+const applyMountingPoint = (type, key, proto) => {
+	Object.defineProperty(proto, key, {
 		get() {
-			return children[key]
+			if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
+			return this.$ctx.children[key].node
 		},
 		set(value) {
-			if (children[key] && ARR.equals(children[key], value)) return
-			updateMountingList({state, children, key, anchor, value})
+			if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
+			const ctx = this.$ctx
+			mountingPointUpdaters[type]({ctx, key, value})
 		},
-		enumerable: true,
-		configurable: true
+		enumerable: true
 	})
 }
 
-const resolveAST = ({node, nodeType, element, state, innerData, refs, children, handlers, subscribers, svg, create}) => {
+const bindMountingNode = ({key, children, anchor}) => {
+	children[key] = {anchor}
+}
+
+const bindMountingList = ({ctx, key, children, anchor}) => {
+	children[key] = {
+		node: defineArr([], {ctx, key, anchor}),
+		anchor
+	}
+}
+
+// Walk through the AST to perform proper actions
+const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, subscribers, svg, create}) => {
 	switch (nodeType) {
+		// Static text node
 		case 'string': {
-			// Static text node
 			DOM.append(element, document.createTextNode(node))
 			break
 		}
+		// Child element or a dynamic text node
 		case 'array': {
-			if (typeOf(node[0]) === 'object') DOM.append(element, create({node, state, innerData, refs, children, handlers, subscribers, svg, create}))
-			else bindTextNode({node, state, handlers, subscribers, innerData, element})
+			// Recursive call for child element
+			if (typeOf(node[0]) === 'object') DOM.append(element, create({node, ctx, innerData, refs, handlers, subscribers, svg, create}))
+			// Dynamic text node
+			else bindTextNode({node, ctx, handlers, subscribers, innerData, element})
 			break
 		}
+		// Mounting points
 		case 'object': {
 			const anchor = document.createTextNode('')
-			if (node.t === 0) bindMountingNode({state, key: node.n, children, anchor})
-			else if (node.t === 1) bindMountingList({state, key: node.n, children, anchor})
-			else throw new TypeError(`Not a standard ef.js AST: Unknown mounting point type '${node.t}'`)
+			// Single node mounting point
+			if (node.t === 0) bindMountingNode({key: node.n, children: ctx.children, anchor})
+			// Multi node mounting point
+			else bindMountingList({ctx, key: node.n, children: ctx.children, anchor})
 			// Append anchor
 			DOM.append(element, anchor)
 			// Display anchor indicator in development mode
@@ -130,20 +143,21 @@ const resolveAST = ({node, nodeType, element, state, innerData, refs, children, 
 	}
 }
 
-const create = ({node, state, innerData, refs, children, handlers, subscribers, svg, create}) => {
+// Create elements based on description from AST
+const create = ({node, ctx, innerData, refs, handlers, subscribers, svg, create}) => {
 	const [info, ...childNodes] = node
 	// Enter SVG mode
 	if (!svg && info.t.toLowerCase() === 'svg') svg = true
 	// First create an element according to the description
-	const element = createElement({info, state, innerData, refs, handlers, subscribers, svg})
+	const element = createElement({info, ctx, innerData, refs, handlers, subscribers, svg})
 
 	// Leave SVG mode if tag is `foreignObject`
 	if (svg && info.t.toLowerCase() === 'foreignobject') svg = false
 
 	// Append child nodes
-	for (let i of childNodes) resolveAST({node: i, nodeType: typeOf(i), element, state, innerData, refs, children, handlers, subscribers, svg, create})
+	for (let i of childNodes) resolveAST({node: i, nodeType: typeOf(i), element, ctx, innerData, refs, handlers, subscribers, svg, create})
 
 	return element
 }
 
-export {create, nullComponent}
+export {create, nullComponent, checkDestroyed, applyMountingPoint}

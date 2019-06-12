@@ -1,15 +1,16 @@
-import { create, nullComponent } from './creator.js'
+import { create, nullComponent, checkDestroyed } from './creator.js'
 import initBinding from './binding.js'
 import { queueDom, inform, exec } from './render-queue.js'
-import { resolveReactivePath, resolveSubscriber } from './resolver.js'
+import { resolveSubscriber } from './resolver.js'
 import DOM from './utils/dom-helper.js'
 import ARR from './utils/array-helper.js'
-import { assign } from './utils/polyfills.js'
+import { assign, legacyAssign } from './utils/polyfills.js'
+import typeOf from './utils/type-of.js'
 import dbg from './utils/debug.js'
 import mountOptions from '../mount-options.js'
 
-const unsubscribe = (_path, fn, subscribers) => {
-	const subscriberNode = resolveSubscriber(_path, subscribers)
+const unsubscribe = (pathStr, fn, subscribers) => {
+	const subscriberNode = resolveSubscriber(pathStr, subscribers)
 	ARR.remove(subscriberNode, fn)
 }
 
@@ -17,6 +18,7 @@ const state = class {
 	constructor (ast) {
 		const children = {}
 		const refs = {}
+		const data = {}
 		const innerData = {}
 		const methods = {}
 		const handlers = {}
@@ -45,41 +47,54 @@ const state = class {
 		}
 
 		const ctx = {
-			mount, refs, innerData, methods, handlers,
-			subscribers, nodeInfo, safeZone
+			mount, refs, data, innerData, methods,
+			handlers, subscribers, nodeInfo, safeZone,
+			children, state: this
 		}
 
 		Object.defineProperty(this, '$ctx', {
-			get() {
-				return ctx
-			}
+			value: ctx,
+			enumerable: false,
+			configurable: true
 		})
 
 		inform()
-		// Init root data node
-		resolveReactivePath(['$data'], this, false)
 
-		nodeInfo.element = create({node: ast, state: this, innerData, refs, children, handlers, subscribers, svg: false, create})
+		nodeInfo.element = create({node: ast, ctx, innerData, refs, handlers, subscribers, svg: false, create})
 		DOM.append(safeZone, nodeInfo.placeholder)
 		queueDom(mount)
 		exec()
 	}
 
+	get $data() {
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
+		return this.$ctx.data
+	}
+
+	set $data(newData) {
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
+		inform()
+		assign(this.$ctx.data, newData)
+		exec()
+	}
+
 	get $methods() {
-		const { methods } = this.$ctx
-		return methods
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
+		return this.$ctx.methods
 	}
 
 	set $methods(newMethods) {
-		const { methods } = this.$ctx
-		assign(methods, newMethods)
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
+		this.$ctx.methods = newMethods
 	}
 
 	get $refs() {
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		return this.$ctx.refs
 	}
 
 	$mount({target, option, parent, key}) {
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		const { nodeInfo, mount } = this.$ctx
 		if (typeof target === 'string') target = document.querySelector(target)
 
@@ -123,6 +138,7 @@ const state = class {
 	}
 
 	$umount() {
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		const { nodeInfo, safeZone, mount } = this.$ctx
 		const { parent, key } = nodeInfo
 		nodeInfo.parent = null
@@ -139,9 +155,11 @@ const state = class {
 	}
 
 	$subscribe(pathStr, subscriber) {
-		const { handlers, subscribers, innerData } = this.$ctx
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
+		const ctx = this.$ctx
+		const { handlers, subscribers, innerData } = ctx
 		const _path = pathStr.split('.')
-		const { dataNode, subscriberNode, _key } = initBinding({bind: [_path], state: this, handlers, subscribers, innerData})
+		const { dataNode, subscriberNode, _key } = initBinding({bind: [_path], ctx, handlers, subscribers, innerData})
 		inform()
 		// Execute the subscriber function immediately
 		try {
@@ -154,34 +172,31 @@ const state = class {
 		exec()
 	}
 
-	$unsubscribe(_path, fn) {
+	$unsubscribe(pathStr, fn) {
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		const { subscribers } = this.$ctx
-		unsubscribe(_path, fn, subscribers)
+		unsubscribe(pathStr, fn, subscribers)
 	}
 
 	$update(newState) {
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		inform()
-		const tmpState = assign({}, newState)
-		if (tmpState.$data) {
-			assign(this.$data, tmpState.$data)
-			delete(tmpState.$data)
-		}
-		if (tmpState.$methods) {
-			assign(this.$methods, tmpState.$methods)
-			delete(tmpState.$methods)
-		}
-		assign(this, tmpState)
+		legacyAssign(this, newState)
 		exec()
 	}
 
 	$destroy() {
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		const { nodeInfo } = this.$ctx
 		inform()
 		this.$umount()
+		// Detatch all mounted components
 		for (let i in this) {
-			this[i] = null
-			delete this[i]
+			if (typeOf(this[i]) === 'array') this[i].clear()
+			else this[i] = null
 		}
+		// Remove context
+		delete this.$ctx
 		// Push DOM removement operation to query
 		queueDom(() => {
 			DOM.remove(nodeInfo.element)
@@ -190,6 +205,12 @@ const state = class {
 		// Render
 		return exec()
 	}
+}
+
+// Workaround for bug of buble
+// https://github.com/bublejs/buble/issues/197
+for (let i of ['$mount', '$umount', '$subscribe', '$unsubscribe', '$update', '$destroy']) {
+	Object.defineProperty(state.prototype, i, {enumerable: false})
 }
 
 export default state
