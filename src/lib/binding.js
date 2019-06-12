@@ -1,6 +1,6 @@
-import { resolve } from './resolver.js'
-import { inform, exec, queue } from './render-queue.js'
-import { execSubscribers } from './subscriber-call-stack.js'
+import {resolve} from './resolver.js'
+import {inform, exec, queue} from './render-queue.js'
+import {execSubscribers} from './subscriber-call-stack.js'
 import ARR from './utils/array-helper.js'
 import isnan from './utils/isnan.js'
 

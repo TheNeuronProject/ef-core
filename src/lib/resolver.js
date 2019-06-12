@@ -1,5 +1,5 @@
-import { inform, exec } from './render-queue.js'
-import { assign } from './utils/polyfills.js'
+import {inform, exec} from './render-queue.js'
+import {assign} from './utils/polyfills.js'
 
 const resolveAllPath = ({_path, handlers, subscribers, innerData}) => {
 	for (let i of _path) {
@@ -59,4 +59,4 @@ const resolveSubscriber = (_path, subscribers) => {
 	return subscribers[key]
 }
 
-export { resolveReactivePath, resolve, resolveSubscriber }
+export {resolveReactivePath, resolve, resolveSubscriber}

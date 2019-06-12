@@ -1,6 +1,6 @@
 import createElement from './element-creator.js'
-import { queue, inform, exec } from './render-queue.js'
-import DOM from './utils/dom-helper.js'
+import {queue, inform, exec} from './render-queue.js'
+import {DOM} from './utils/dom-helper.js'
 import ARR from './utils/array-helper.js'
 import defineArr from './utils/dom-arr-helper.js'
 import typeOf from './utils/type-of.js'
@@ -106,7 +106,7 @@ const bindMountingList = ({ctx, key, children, anchor}) => {
 }
 
 // Walk through the AST to perform proper actions
-const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, subscribers, svg, create}) => {
+const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, subscribers, svg, create, State}) => {
 	switch (nodeType) {
 		// Static text node
 		case 'string': {
@@ -116,7 +116,7 @@ const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, su
 		// Child element or a dynamic text node
 		case 'array': {
 			// Recursive call for child element
-			if (typeOf(node[0]) === 'object') DOM.append(element, create({node, ctx, innerData, refs, handlers, subscribers, svg, create}))
+			if (typeOf(node[0]) === 'object') DOM.append(element, create({node, ctx, innerData, refs, handlers, subscribers, svg, create, State}))
 			// Dynamic text node
 			else bindTextNode({node, ctx, handlers, subscribers, innerData, element})
 			break
@@ -129,33 +129,34 @@ const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, su
 			// Multi node mounting point
 			else bindMountingList({ctx, key: node.n, children: ctx.children, anchor})
 			// Append anchor
+			if (process.env.NODE_ENV !== 'production') DOM.append(element, document.createComment(`EF MOUNTING POINT '${node.n}' START`))
 			DOM.append(element, anchor)
-			// Display anchor indicator in development mode
-			if (process.env.NODE_ENV !== 'production') {
-				DOM.before(anchor, document.createComment(`Start of mounting point '${node.n}'`))
-				DOM.after(anchor, document.createComment(`End of mounting point '${node.n}'`))
-			}
+			if (process.env.NODE_ENV !== 'production') DOM.append(element, document.createComment(`EF MOUNTING POINT '${node.n}' END`))
 			break
 		}
-		default: {
-			throw new TypeError(`Not a standard ef.js AST: Unknown node type '${nodeType}'`)
-		}
+		default:
 	}
 }
 
 // Create elements based on description from AST
-const create = ({node, ctx, innerData, refs, handlers, subscribers, svg, create}) => {
+const create = ({node, ctx, innerData, refs, handlers, subscribers, svg, create, State}) => {
 	const [info, ...childNodes] = node
+	const fragment = info.t === 0
 	// Enter SVG mode
-	if (!svg && info.t.toLowerCase() === 'svg') svg = true
+	if (!fragment && !svg && info.t.toLowerCase() === 'svg') svg = true
 	// First create an element according to the description
 	const element = createElement({info, ctx, innerData, refs, handlers, subscribers, svg})
+	if (fragment && process.env.NODE_ENV !== 'production') element.push(document.createComment('EF FRAGMENT START'))
 
 	// Leave SVG mode if tag is `foreignObject`
 	if (svg && info.t.toLowerCase() === 'foreignobject') svg = false
 
 	// Append child nodes
-	for (let i of childNodes) resolveAST({node: i, nodeType: typeOf(i), element, ctx, innerData, refs, handlers, subscribers, svg, create})
+	for (let i of childNodes) {
+		if (i instanceof State) i.$mount({target: element})
+		else resolveAST({node: i, nodeType: typeOf(i), element, ctx, innerData, refs, handlers, subscribers, svg, create, State})
+	}
+	if (fragment && process.env.NODE_ENV !== 'production') element.push(document.createComment('EF FRAGMENT END'))
 
 	return element
 }

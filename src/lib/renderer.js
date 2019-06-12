@@ -1,10 +1,11 @@
-import { create, nullComponent, checkDestroyed } from './creator.js'
+import {create, nullComponent, checkDestroyed} from './creator.js'
 import initBinding from './binding.js'
-import { queueDom, inform, exec } from './render-queue.js'
-import { resolveSubscriber } from './resolver.js'
-import DOM from './utils/dom-helper.js'
+import {queueDom, inform, exec} from './render-queue.js'
+import {resolveSubscriber} from './resolver.js'
+import {DOM, EFFragment} from './utils/dom-helper.js'
 import ARR from './utils/array-helper.js'
-import { assign, legacyAssign } from './utils/polyfills.js'
+import instanceOf from './utils/fast-instance-of.js'
+import {assign, legacyAssign} from './utils/polyfills.js'
 import typeOf from './utils/type-of.js'
 import dbg from './utils/debug.js'
 import mountOptions from '../mount-options.js'
@@ -14,8 +15,8 @@ const unsubscribe = (pathStr, fn, subscribers) => {
 	ARR.remove(subscriberNode, fn)
 }
 
-const state = class {
-	constructor (ast) {
+const State = class {
+	constructor(ast) {
 		const children = {}
 		const refs = {}
 		const data = {}
@@ -60,7 +61,7 @@ const state = class {
 
 		inform()
 
-		nodeInfo.element = create({node: ast, ctx, innerData, refs, handlers, subscribers, svg: false, create})
+		nodeInfo.element = create({node: ast, ctx, innerData, refs, handlers, subscribers, svg: false, create, State})
 		DOM.append(safeZone, nodeInfo.placeholder)
 		queueDom(mount)
 		exec()
@@ -131,7 +132,9 @@ const state = class {
 			}
 			case mountOptions.APPEND:
 			default: {
-				DOM.append(target, nodeInfo.placeholder)
+				// Parent is EFFragment should only happen when using jsx
+				if (instanceOf(parent, EFFragment)) DOM.append(target, nodeInfo.element)
+				else DOM.append(target, nodeInfo.placeholder)
 			}
 		}
 		return exec()
@@ -207,10 +210,10 @@ const state = class {
 	}
 }
 
-// Workaround for bug of buble
+// Workaround for a bug of buble
 // https://github.com/bublejs/buble/issues/197
 for (let i of ['$mount', '$umount', '$subscribe', '$unsubscribe', '$update', '$destroy']) {
-	Object.defineProperty(state.prototype, i, {enumerable: false})
+	Object.defineProperty(State.prototype, i, {enumerable: false})
 }
 
-export default state
+export default State
