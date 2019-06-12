@@ -53,10 +53,12 @@ const create = (value) => {
 }
 
 // Make a helper component for text fragments
-const TextFragment = registerProps(create([{t: 0},[['text']]]), {text: {}})
-const createTextFragment = text => new TextFragment({text})
+const TextFragment = class extends registerProps(create([{t: 0},[['text']]]), {text: {}}) {
+	constructor(text) {
+		super({text})
+	}
+}
 
-
-export {create, createTextFragment, createElement, Fragment, onNextRender, inform, exec, bundle, isPaused, mountOptions, version}
+export {create, TextFragment, createElement, Fragment, onNextRender, inform, exec, bundle, isPaused, mountOptions, version}
 
 if (process.env.NODE_ENV !== 'production') dbg.info(`ef-core v${version} initialized!`)
