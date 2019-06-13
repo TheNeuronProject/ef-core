@@ -87,7 +87,9 @@ var template2 = parseEft('  this is a comment' +
 '\n  	  	.Notice: {{notice = ]]}}' +
 '\n  		. test' +
 '\n  		-node2' +
-'\n  		+list1')
+'\n  		+list1' +
+'\n  -node3' +
+'\n  +list2')
 
 var data1 = {
 	$data: {

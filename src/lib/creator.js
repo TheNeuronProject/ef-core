@@ -1,8 +1,7 @@
 import createElement from './element-creator.js'
 import {queue, inform, exec} from './render-queue.js'
-import {DOM} from './utils/dom-helper.js'
+import {DOM, MountingList, mountingPointStore} from './utils/dom-helper.js'
 import ARR from './utils/array-helper.js'
-import defineArr from './utils/dom-arr-helper.js'
 import typeOf from './utils/type-of.js'
 import initBinding from './binding.js'
 import mountOptions from '../mount-options.js'
@@ -62,7 +61,7 @@ const updateMountingList = ({ctx, key, value}) => {
 	if (node) {
 		node.clear()
 		for (let item of value) {
-			item.$umount()
+			if (item.$ctx.nodeInfo.parent) item.$umount()
 			DOM.append(fragment, item.$mount({parent: ctx.state, key}))
 		}
 	} else for (let item of value) DOM.append(fragment, item.$mount({parent: ctx.state, key}))
@@ -79,8 +78,8 @@ const mountingPointUpdaters = [
 	updateMountingList
 ]
 
-const applyMountingPoint = (type, key, proto) => {
-	Object.defineProperty(proto, key, {
+const applyMountingPoint = (type, key, tpl) => {
+	Object.defineProperty(tpl.prototype, key, {
 		get() {
 			if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 			return this.$ctx.children[key].node
@@ -94,19 +93,23 @@ const applyMountingPoint = (type, key, proto) => {
 	})
 }
 
-const bindMountingNode = ({key, children, anchor}) => {
+const bindMountingNode = ({ctx, key, anchor}) => {
+	const {children, isFragment} = ctx
 	children[key] = {anchor}
+	if (isFragment) mountingPointStore.set(anchor, children[key])
 }
 
-const bindMountingList = ({ctx, key, children, anchor}) => {
+const bindMountingList = ({ctx, key, anchor}) => {
+	const {children, isFragment} = ctx
 	children[key] = {
-		node: defineArr([], {ctx, key, anchor}),
+		node: new MountingList({ctx, key, anchor}),
 		anchor
 	}
+	if (isFragment) mountingPointStore.set(anchor, children[key])
 }
 
 // Walk through the AST to perform proper actions
-const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, subscribers, svg, create, State}) => {
+const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, subscribers, svg, create, EFBaseComponent}) => {
 	switch (nodeType) {
 		// Static text node
 		case 'string': {
@@ -116,7 +119,7 @@ const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, su
 		// Child element or a dynamic text node
 		case 'array': {
 			// Recursive call for child element
-			if (typeOf(node[0]) === 'object') DOM.append(element, create({node, ctx, innerData, refs, handlers, subscribers, svg, create, State}))
+			if (typeOf(node[0]) === 'object') DOM.append(element, create({node, ctx, innerData, refs, handlers, subscribers, svg, create, EFBaseComponent}))
 			// Dynamic text node
 			else bindTextNode({node, ctx, handlers, subscribers, innerData, element})
 			break
@@ -125,9 +128,9 @@ const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, su
 		case 'object': {
 			const anchor = document.createTextNode('')
 			// Single node mounting point
-			if (node.t === 0) bindMountingNode({key: node.n, children: ctx.children, anchor})
+			if (node.t === 0) bindMountingNode({ctx, key: node.n, anchor})
 			// Multi node mounting point
-			else bindMountingList({ctx, key: node.n, children: ctx.children, anchor})
+			else bindMountingList({ctx, key: node.n, anchor})
 			// Append anchor
 			if (process.env.NODE_ENV !== 'production') DOM.append(element, document.createComment(`EF MOUNTING POINT '${node.n}' START`))
 			DOM.append(element, anchor)
@@ -139,7 +142,7 @@ const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, su
 }
 
 // Create elements based on description from AST
-const create = ({node, ctx, innerData, refs, handlers, subscribers, svg, create, State}) => {
+const create = ({node, ctx, innerData, refs, handlers, subscribers, svg, create, EFBaseComponent}) => {
 	const [info, ...childNodes] = node
 	const fragment = info.t === 0
 	// Enter SVG mode
@@ -153,8 +156,8 @@ const create = ({node, ctx, innerData, refs, handlers, subscribers, svg, create,
 
 	// Append child nodes
 	for (let i of childNodes) {
-		if (i instanceof State) i.$mount({target: element})
-		else resolveAST({node: i, nodeType: typeOf(i), element, ctx, innerData, refs, handlers, subscribers, svg, create, State})
+		if (i instanceof EFBaseComponent) i.$mount({target: element})
+		else resolveAST({node: i, nodeType: typeOf(i), element, ctx, innerData, refs, handlers, subscribers, svg, create, EFBaseComponent})
 	}
 	if (fragment && process.env.NODE_ENV !== 'production') element.push(document.createComment('EF FRAGMENT END'))
 
