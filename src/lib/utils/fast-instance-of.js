@@ -1,3 +1,3 @@
-const instanceOf = (er, ee) => er.constructor === ee
+const isInstance = (er, ee) => er.constructor === ee
 
-export default instanceOf
+export default isInstance
