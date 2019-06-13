@@ -18,25 +18,24 @@ const inform = () => {
 }
 
 const execModifications = () => {
+	if (modificationQueue.length === 0) return
 	const renderQueue = ARR.unique(modificationQueue)
-	for (let i of renderQueue) i()
-	if (process.env.NODE_ENV !== 'production') dbg.info(`${modificationQueue.length} modification operation(s) cached, ${renderQueue.length} executed.`)
 	ARR.empty(modificationQueue)
+	for (let i of renderQueue) i()
 }
 
 const execDomModifications = () => {
+	if (domQueue.length === 0) return
 	const domRenderQueue = ARR.rightUnique(domQueue)
-	for (let i of domRenderQueue) i()
-	if (process.env.NODE_ENV !== 'production') dbg.info(`${domQueue.length} DOM operation(s) cached, ${domRenderQueue.length} executed.`)
 	ARR.empty(domQueue)
+	for (let i of domRenderQueue) i()
 }
 
 const execUserQueue = () => {
 	if (userQueue.length === 0) return
 	const userFnQueue = ARR.unique(userQueue)
-	for (let i of userFnQueue) i()
-	if (process.env.NODE_ENV !== 'production') dbg.info(`${userQueue.length} user operation(s) cached, ${userFnQueue.length} executed.`)
 	ARR.empty(userQueue)
+	for (let i of userFnQueue) i()
 }
 
 const exec = (immediate) => {

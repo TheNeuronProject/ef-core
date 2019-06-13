@@ -2,11 +2,12 @@ import {create, nullComponent, checkDestroyed} from './creator.js'
 import initBinding from './binding.js'
 import {queueDom, inform, exec} from './render-queue.js'
 import {resolveSubscriber} from './resolver.js'
-import {DOM, EFFragment} from './utils/dom-helper.js'
+import {DOM, EFFragment, mountingPointStore} from './utils/dom-helper.js'
 import ARR from './utils/array-helper.js'
-import instanceOf from './utils/fast-instance-of.js'
 import {assign, legacyAssign} from './utils/polyfills.js'
+import isInstance from './utils/fast-instance-of.js'
 import typeOf from './utils/type-of.js'
+import {enumerableFalse} from './utils/buble-fix.js'
 import dbg from './utils/debug.js'
 import mountOptions from '../mount-options.js'
 
@@ -15,7 +16,7 @@ const unsubscribe = (pathStr, fn, subscribers) => {
 	ARR.remove(subscriberNode, fn)
 }
 
-const State = class {
+const EFBaseComponent = class {
 	constructor(ast) {
 		const children = {}
 		const refs = {}
@@ -25,7 +26,7 @@ const State = class {
 		const handlers = {}
 		const subscribers = {}
 		const nodeInfo = {
-			placeholder: document.createTextNode(''),
+			placeholder: null,
 			replace: [],
 			parent: null,
 			key: null
@@ -37,7 +38,8 @@ const State = class {
 		 */
 		const safeZone = document.createDocumentFragment()
 
-		if (process.env.NODE_ENV !== 'production') nodeInfo.placeholder = document.createComment('EF COMPONENT PLACEHOLDER')
+		if (process.env.NODE_ENV === 'production') nodeInfo.placeholder = document.createTextNode('')
+		else nodeInfo.placeholder = document.createComment('EF COMPONENT PLACEHOLDER')
 
 		const mount = () => {
 			if (nodeInfo.replace.length > 0) {
@@ -50,7 +52,7 @@ const State = class {
 		const ctx = {
 			mount, refs, data, innerData, methods,
 			handlers, subscribers, nodeInfo, safeZone,
-			children, state: this
+			children, state: this, isFragment: ast[0].t === 0
 		}
 
 		Object.defineProperty(this, '$ctx', {
@@ -61,7 +63,7 @@ const State = class {
 
 		inform()
 
-		nodeInfo.element = create({node: ast, ctx, innerData, refs, handlers, subscribers, svg: false, create, State})
+		nodeInfo.element = create({node: ast, ctx, innerData, refs, handlers, subscribers, svg: false, create, EFBaseComponent})
 		DOM.append(safeZone, nodeInfo.placeholder)
 		queueDom(mount)
 		exec()
@@ -133,7 +135,7 @@ const State = class {
 			case mountOptions.APPEND:
 			default: {
 				// Parent is EFFragment should only happen when using jsx
-				if (instanceOf(parent, EFFragment)) DOM.append(target, nodeInfo.element)
+				if (isInstance(parent, EFFragment)) DOM.append(target, nodeInfo.element)
 				else DOM.append(target, nodeInfo.placeholder)
 			}
 		}
@@ -148,9 +150,16 @@ const State = class {
 		nodeInfo.key = null
 
 		inform()
-		if (parent && key !== '__DIRECTMOUNT__' && parent[key]) {
-			if (Array.isArray(parent[key])) ARR.remove(parent[key], this)
-			else parent[key] = nullComponent
+		if (parent) {
+			if (key !== '__DIRECTMOUNT__') {
+				if (parent[key]) {
+					if (Array.isArray(parent[key])) {
+						// Remove self from parent list mounting point
+						ARR.remove(parent[key], this)
+					} else parent[key] = nullComponent
+				}
+			// Else Remove elements from fragment parent
+			} else if (isInstance(parent, EFFragment)) ARR.remove(parent.$ctx.nodeInfo.element, nodeInfo.element)
 		}
 		DOM.append(safeZone, nodeInfo.placeholder)
 		queueDom(mount)
@@ -190,9 +199,10 @@ const State = class {
 
 	$destroy() {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
-		const { nodeInfo } = this.$ctx
+		const { nodeInfo, isFragment, children } = this.$ctx
 		inform()
 		this.$umount()
+		if (isFragment) for (let i in children) mountingPointStore.delete(children[i].anchor)
 		// Detatch all mounted components
 		for (let i in this) {
 			if (typeOf(this[i]) === 'array') this[i].clear()
@@ -210,10 +220,5 @@ const State = class {
 	}
 }
 
-// Workaround for a bug of buble
-// https://github.com/bublejs/buble/issues/197
-for (let i of ['$mount', '$umount', '$subscribe', '$unsubscribe', '$update', '$destroy']) {
-	Object.defineProperty(State.prototype, i, {enumerable: false})
-}
-
-export default State
+enumerableFalse(EFBaseComponent, ['$mount', '$umount', '$subscribe', '$unsubscribe', '$update', '$destroy'])
+export default EFBaseComponent

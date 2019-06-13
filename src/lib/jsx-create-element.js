@@ -1,14 +1,34 @@
-import State from './renderer.js'
+import EFBaseComponent from './renderer.js'
+import registerProps from './register-props.js'
 import {assign} from './utils/polyfills.js'
+import {inform, exec} from './render-queue.js'
 
 const Fragment = Object.create(null)
 
+// Make a helper component for text fragments
+const textFragmentAst = [{t: 0},[['text']]]
+const TextFragment = class extends EFBaseComponent {
+	constructor(state) {
+		inform()
+		super(textFragmentAst)
+		this.$update(state)
+		exec()
+	}
+}
+
+registerProps(TextFragment, {text: {}})
+
+const createTextFragment = (value) => {
+	if (typeof value === 'string') return new TextFragment({text: value})
+	return value
+}
+
 const createElement = (tag, attrs, ...children) => {
 	// Create special component for fragment
-	if (tag === Fragment) return new State([{t: 0}, ...children])
+	if (tag === Fragment) return new EFBaseComponent([{t: 0}, ...children.map(createTextFragment)])
 
 	// Create an instance if tag is an ef class
-	if (Object.isPrototypeOf.call(State, tag)) {
+	if (Object.isPrototypeOf.call(EFBaseComponent, tag)) {
 		if (children.length <= 0) return new tag(attrs)
 		return new tag(assign({children}, attrs || {}))
 	}
@@ -20,7 +40,7 @@ const createElement = (tag, attrs, ...children) => {
 		if (transformedAttrs[i] === true) transformedAttrs[i] = ''
 	}
 
-	return new State([
+	return new EFBaseComponent([
 		{
 			t: tag,
 			a: transformedAttrs
@@ -29,4 +49,4 @@ const createElement = (tag, attrs, ...children) => {
 	])
 }
 
-export {createElement, Fragment}
+export {createElement, Fragment, TextFragment}
