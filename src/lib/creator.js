@@ -96,7 +96,10 @@ const applyMountingPoint = (type, key, tpl) => {
 const bindMountingNode = ({ctx, key, anchor}) => {
 	const {children, isFragment} = ctx
 	children[key] = {anchor}
-	if (isFragment) mountingPointStore.set(anchor, children[key])
+	if (isFragment) {
+		DOM.append(ctx.safeZone, anchor)
+		mountingPointStore.set(anchor, children[key])
+	}
 }
 
 const bindMountingList = ({ctx, key, anchor}) => {
@@ -105,7 +108,10 @@ const bindMountingList = ({ctx, key, anchor}) => {
 		node: new MountingList({ctx, key, anchor}),
 		anchor
 	}
-	if (isFragment) mountingPointStore.set(anchor, children[key])
+	if (isFragment) {
+		DOM.append(ctx.safeZone, anchor)
+		mountingPointStore.set(anchor, children[key])
+	}
 }
 
 // Walk through the AST to perform proper actions
