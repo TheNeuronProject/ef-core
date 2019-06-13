@@ -30,7 +30,7 @@ const createElement = (tag, attrs, ...children) => {
 	// Create an instance if tag is an ef class
 	if (Object.isPrototypeOf.call(EFBaseComponent, tag)) {
 		if (children.length <= 0) return new tag(attrs)
-		return new tag(assign({children}, attrs || {}))
+		return new tag(assign({children: children.map(createTextFragment)}, attrs || {}))
 	}
 
 	// Else return the generated basic component
