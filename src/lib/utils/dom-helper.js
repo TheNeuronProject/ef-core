@@ -163,9 +163,9 @@ DOM.append = (node, ...nodes) => {
 	for (let i of nodes) {
 		if (isInstance(i, EFFragment)) i.appendTo(tempFragment)
 		else {
+			proto.appendChild.call(tempFragment, i)
 			const mountingPoint = mountingPointStore.get(i)
 			if (mountingPoint) handleMountingPoint(mountingPoint, tempFragment)
-			proto.appendChild.call(tempFragment, i)
 		}
 	}
 	proto.appendChild.call(node, tempFragment)
