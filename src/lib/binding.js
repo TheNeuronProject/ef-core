@@ -25,7 +25,7 @@ const initDataNode = ({parentNode, dataNode, handlerNode, subscriberNode, ctx, _
 const initBinding = ({bind, ctx, handlers, subscribers, innerData}) => {
 	const _path = ARR.copy(bind[0])
 	const _key = _path.pop()
-	const { parentNode, handlerNode, subscriberNode, dataNode } = resolve({
+	const {parentNode, handlerNode, subscriberNode, dataNode} = resolve({
 		_path,
 		_key,
 		data: ctx.data,
