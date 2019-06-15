@@ -17,30 +17,35 @@ const resolveAllPath = ({_path, handlers, subscribers, innerData}) => {
 	}
 }
 
-const resolveReactivePath = (_path, obj, enume) => {
+// Workaround for the third bug of buble:
+// https://github.com/bublejs/buble/issues/106
+const defineNode = (key, obj) => {
+	const node = {}
+	Object.defineProperty(obj, key, {
+		get() {
+			return node
+		},
+		set(data) {
+			inform()
+			assign(node, data)
+			exec()
+		},
+		configurable: false,
+		enumerable: true
+	})
+	return node
+}
+
+const resolveReactivePath = (_path, obj) => {
 	for (let i of _path) {
-		if (!obj[i]) {
-			const node = {}
-			Object.defineProperty(obj, i, {
-				get() {
-					return node
-				},
-				set(data) {
-					inform()
-					assign(node, data)
-					exec()
-				},
-				configurable: !enume,
-				enumerable: enume
-			})
-		}
-		obj = obj[i]
+		if (obj[i]) obj = obj[i]
+		else obj = defineNode(i, obj)
 	}
 	return obj
 }
 
 const resolve = ({_path, _key, data, handlers, subscribers, innerData}) => {
-	const parentNode = resolveReactivePath(_path, data, true)
+	const parentNode = resolveReactivePath(_path, data)
 	const {handlerNode, subscriberNode, dataNode} = resolveAllPath({_path, handlers, subscribers, innerData})
 	if (!handlerNode[_key]) handlerNode[_key] = []
 	if (!subscriberNode[_key]) subscriberNode[_key] = []
