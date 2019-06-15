@@ -27,7 +27,7 @@ const applyMountingPoints = (node, tpl) => {
 			break
 		}
 		default: {
-			throw new TypeError(`Not a standard ef.js AST: Unknown node type '${nodeType}'`)
+			throw new TypeError(`[EF] Not a standard ef.js AST: Unknown node type '${nodeType}'`)
 		}
 	}
 }
