@@ -1,11 +1,15 @@
 var template = parseEft(
 '>div.{{class.text = box test}}' +
 '\n	#testattr' +
-'\n #emptyattr = {{empty = &}}' +
+'\n #emptyattr = {{empty}}' +
 '\n	#id = id1' +
 '\n	.text0' +
 '\n	>br' +
 '\n	.{{root.text}}' +
+'\n	>br' +
+'\n	.This should not be undefined:' +
+'\n	>input' +
+'\n		%value = {{nobody_use_field}}' +
 '\n	>br' +
 '\n	.{{class.text}}' +
 '\n	>div#testRef' +
