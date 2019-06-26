@@ -1,6 +1,7 @@
 import createElement from './element-creator.js'
 import {queue, inform, exec} from './render-queue.js'
-import {DOM, MountingList, mountingPointStore} from './utils/dom-helper.js'
+import {DOM, mountingPointStore} from './utils/dom-helper.js'
+import defineArr from './utils/dom-arr-helper.js'
 import ARR from './utils/array-helper.js'
 import typeOf from './utils/type-of.js'
 import initBinding from './binding.js'
@@ -105,7 +106,7 @@ const bindMountingNode = ({ctx, key, anchor}) => {
 const bindMountingList = ({ctx, key, anchor}) => {
 	const {children, isFragment} = ctx
 	children[key] = {
-		node: new MountingList({ctx, key, anchor}),
+		node: defineArr([], {ctx, key, anchor}),
 		anchor
 	}
 	if (isFragment) {
