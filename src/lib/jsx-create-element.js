@@ -1,28 +1,8 @@
-import EFBaseComponent from './renderer.js'
-import registerProps from './register-props.js'
+import {EFBaseComponent, EFTextFragment, Fragment} from './renderer.js'
 import {assign} from './utils/polyfills.js'
-import {inform, exec} from './render-queue.js'
-
-const Fragment = class extends EFBaseComponent {
-	constructor(...children) {
-		super([{t: 0}, ...children])
-	}
-}
-
-// Make a helper component for text fragments
-const textFragmentAst = [{t: 0},[['text']]]
-const TextFragment = class extends EFBaseComponent {
-	constructor(text) {
-		inform()
-		super(textFragmentAst)
-		this.text = text
-		exec()
-	}
-}
-registerProps(TextFragment, {text: {}})
 
 const textToFragment = (value) => {
-	if (typeof value === 'string') return new TextFragment(value)
+	if (typeof value === 'string') return new EFTextFragment(value)
 	return value
 }
 
@@ -52,4 +32,4 @@ const createElement = (tag, attrs, ...children) => {
 	])
 }
 
-export {createElement, Fragment, TextFragment}
+export default createElement

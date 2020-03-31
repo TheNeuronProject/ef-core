@@ -7,6 +7,8 @@ import typeOf from './utils/type-of.js'
 import initBinding from './binding.js'
 import mountOptions from '../mount-options.js'
 
+import shared from './utils/global-shared.js'
+
 const nullComponent = Object.create(null)
 
 const checkDestroyed = (state) => {
@@ -38,6 +40,9 @@ const updateMountingNode = ({ctx, key, value}) => {
 	const {anchor, node} = child
 	if (node === value) return
 
+	if (value instanceof Node) value = new shared.EFNodeWrapper(value)
+	else if (typeOf(value) === 'string') value = new shared.EFTextFragment(value)
+
 	inform()
 	// Update component
 	if (node) {
@@ -62,6 +67,8 @@ const updateMountingList = ({ctx, key, value}) => {
 	if (node) {
 		node.clear()
 		for (let item of value) {
+			if (item instanceof Node) item = new shared.EFNodeWrapper(item)
+			else if (typeOf(item) === 'string') item = new shared.EFTextFragment(item)
 			if (item.$ctx.nodeInfo.parent) item.$umount()
 			DOM.append(fragment, item.$mount({parent: ctx.state, key}))
 		}
@@ -116,7 +123,7 @@ const bindMountingList = ({ctx, key, anchor}) => {
 }
 
 // Walk through the AST to perform proper actions
-const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, subscribers, svg, create, EFBaseComponent}) => {
+const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, subscribers, svg, create}) => {
 	switch (nodeType) {
 		// Static text node
 		case 'string': {
@@ -126,7 +133,7 @@ const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, su
 		// Child element or a dynamic text node
 		case 'array': {
 			// Recursive call for child element
-			if (typeOf(node[0]) === 'object') DOM.append(element, create({node, ctx, innerData, refs, handlers, subscribers, svg, create, EFBaseComponent}))
+			if (typeOf(node[0]) === 'object') DOM.append(element, create({node, ctx, innerData, refs, handlers, subscribers, svg}))
 			// Dynamic text node
 			else bindTextNode({node, ctx, handlers, subscribers, innerData, element})
 			break
@@ -149,22 +156,23 @@ const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, su
 }
 
 // Create elements based on description from AST
-const create = ({node, ctx, innerData, refs, handlers, subscribers, svg, create, EFBaseComponent}) => {
+const create = ({node, ctx, innerData, refs, handlers, subscribers, svg}) => {
 	const [info, ...childNodes] = node
 	const fragment = info.t === 0
+	const custom = Object.isPrototypeOf.call(shared.EFBaseComponent, ctx.scope[info.t] || info.t)
 	// Enter SVG mode
 	if (!fragment && !svg && info.t.toLowerCase() === 'svg') svg = true
 	// First create an element according to the description
-	const element = createElement({info, ctx, innerData, refs, handlers, subscribers, svg})
+	const element = createElement({info, ctx, innerData, refs, handlers, subscribers, svg, fragment, custom})
 	if (fragment && process.env.NODE_ENV !== 'production') element.push(document.createComment('EF FRAGMENT START'))
 
 	// Leave SVG mode if tag is `foreignObject`
 	if (svg && info.t.toLowerCase() === 'foreignobject') svg = false
 
 	// Append child nodes
-	for (let i of childNodes) {
-		if (i instanceof EFBaseComponent) i.$mount({target: element})
-		else resolveAST({node: i, nodeType: typeOf(i), element, ctx, innerData, refs, handlers, subscribers, svg, create, EFBaseComponent})
+	for (let node of childNodes) {
+		if (node instanceof shared.EFBaseComponent) node.$mount({target: element})
+		else resolveAST({node, nodeType: typeOf(node), element, ctx, innerData, refs, handlers, subscribers, svg, create})
 	}
 	if (fragment && process.env.NODE_ENV !== 'production') element.push(document.createComment('EF FRAGMENT END'))
 

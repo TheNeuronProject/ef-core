@@ -1,12 +1,12 @@
 /* Get new events that works in all target browsers
  * though a little bit old-fashioned
  */
-const getEvent = (name, props = {
+const getEvent = (name, {bubbles, cancelable} = {
 	bubbles: false,
 	cancelable: false
 }) => {
-	const event = document.createEvent('Event')
-	event.initEvent(name, props.bubbles, props.cancelable)
+	const event = document.createEvent('CustomEvent')
+	event.initEvent(name, bubbles, cancelable)
 	return event
 }
 
