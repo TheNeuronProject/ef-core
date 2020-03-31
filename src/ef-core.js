@@ -1,13 +1,13 @@
 // Import everything
-import EFBaseComponent from './lib/renderer.js'
+import {EFBaseComponent, EFNodeWrapper, EFTextFragment, Fragment} from './lib/renderer.js'
 import {applyMountingPoint} from './lib/creator.js'
 import mountOptions from './mount-options.js'
-import {createElement, Fragment, TextFragment} from './lib/jsx-create-element.js'
+import createElement from './lib/jsx-create-element.js'
 import registerProps from './lib/register-props.js'
-import { onNextRender, inform, exec, bundle, isPaused } from './lib/render-queue.js'
+import {onNextRender, inform, exec, bundle, isPaused} from './lib/render-queue.js'
 import dbg from './lib/utils/debug.js'
 import typeOf from './lib/utils/type-of.js'
-import { version } from '../package.json'
+import {version} from '../package.json'
 
 // Apply mounting point properties for classes
 const applyMountingPoints = (node, tpl) => {
@@ -36,9 +36,9 @@ const applyMountingPoints = (node, tpl) => {
 const create = (value) => {
 	const ast = value
 	const EFComponent = class extends EFBaseComponent {
-		constructor(newState) {
+		constructor(newState, scope) {
 			inform()
-			super(ast)
+			super(ast, scope)
 			if (newState) this.$update(newState)
 			exec()
 		}
@@ -51,6 +51,6 @@ const create = (value) => {
 	return EFComponent
 }
 
-export {create, TextFragment, registerProps, createElement, Fragment, onNextRender, inform, exec, bundle, isPaused, mountOptions, version}
+export {create, registerProps, createElement, EFNodeWrapper, EFTextFragment, Fragment, onNextRender, inform, exec, bundle, isPaused, mountOptions, version}
 
 if (process.env.NODE_ENV !== 'production') dbg.info(`ef-core v${version} initialized!`)

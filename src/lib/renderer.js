@@ -2,6 +2,7 @@ import {create, nullComponent, checkDestroyed} from './creator.js'
 import initBinding from './binding.js'
 import {queueDom, inform, exec} from './render-queue.js'
 import {resolveSubscriber} from './resolver.js'
+import registerProps from './register-props.js'
 import {DOM, EFFragment, mountingPointStore} from './utils/dom-helper.js'
 import ARR from './utils/array-helper.js'
 import {assign, legacyAssign} from './utils/polyfills.js'
@@ -9,7 +10,10 @@ import isInstance from './utils/fast-instance-of.js'
 import typeOf from './utils/type-of.js'
 import {enumerableFalse} from './utils/buble-fix.js'
 import dbg from './utils/debug.js'
+import getEvent from './utils/event-helper.js'
 import mountOptions from '../mount-options.js'
+
+import shared from './utils/global-shared.js'
 
 const unsubscribe = (pathStr, fn, subscribers) => {
 	const subscriberNode = resolveSubscriber(pathStr, subscribers)
@@ -17,7 +21,7 @@ const unsubscribe = (pathStr, fn, subscribers) => {
 }
 
 const EFBaseComponent = class {
-	constructor(ast) {
+	constructor(ast, scope = {}) {
 		const children = {}
 		const refs = {}
 		const data = {}
@@ -50,7 +54,7 @@ const EFBaseComponent = class {
 		}
 
 		const ctx = {
-			mount, refs, data, innerData, methods,
+			scope, mount, refs, data, innerData, methods,
 			handlers, subscribers, nodeInfo, safeZone,
 			children, state: this, isFragment: ast[0].t === 0
 		}
@@ -63,7 +67,7 @@ const EFBaseComponent = class {
 
 		inform()
 
-		nodeInfo.element = create({node: ast, ctx, innerData, refs, handlers, subscribers, svg: false, create, EFBaseComponent})
+		nodeInfo.element = create({node: ast, ctx, innerData, refs, handlers, subscribers, svg: false})
 		DOM.append(safeZone, nodeInfo.placeholder)
 		queueDom(mount)
 		exec()
@@ -197,6 +201,26 @@ const EFBaseComponent = class {
 		exec()
 	}
 
+	$dispatch(event) {
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
+		this.$ctx.nodeInfo.placeholder.dispatchEvent(event)
+	}
+
+	$emit(event, options) {
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
+		this.$dispatch(getEvent(event, options))
+	}
+
+	$on(...args) {
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
+		this.$ctx.nodeInfo.placeholder.addEventListener(...args)
+	}
+
+	$off(...args) {
+		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
+			this.$ctx.nodeInfo.placeholder.removeEventListener(...args)
+	}
+
 	$destroy() {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		const { nodeInfo, isFragment, children } = this.$ctx
@@ -220,5 +244,45 @@ const EFBaseComponent = class {
 	}
 }
 
-enumerableFalse(EFBaseComponent, ['$mount', '$umount', '$subscribe', '$unsubscribe', '$update', '$destroy'])
-export default EFBaseComponent
+const fragmentAST = [{t: 0}]
+const EFNodeWrapper = class extends EFBaseComponent {
+	constructor(...nodes) {
+		super(fragmentAST)
+		// Use parens to bypass ESLint's semicolon check
+		// Semi is needed for preventing Buble's bug
+		;(this).$ctx.nodeInfo.element.push(...nodes)
+		this.$ctx.elements = nodes
+	}
+
+	get $el() {
+		return this.$ctx.elements
+	}
+}
+
+const Fragment = class extends EFBaseComponent {
+	constructor(...children) {
+		super([{t: 0}, ...children])
+	}
+}
+
+// Make a helper component for text fragments
+const textFragmentAst = [{t: 0},[['text']]]
+const EFTextFragment = class extends EFBaseComponent {
+	constructor(text) {
+		inform()
+		super(textFragmentAst)
+		this.text = text
+		exec()
+	}
+}
+registerProps(EFTextFragment, {text: {}})
+
+enumerableFalse(EFBaseComponent, ['$mount', '$umount', '$subscribe', '$unsubscribe', '$update', '$dispatch', '$emit', '$on', '$off', '$destroy'])
+enumerableFalse(EFNodeWrapper, ['$el'])
+
+shared.EFBaseComponent = EFBaseComponent
+shared.EFNodeWrapper = EFNodeWrapper
+shared.EFTextFragment = EFTextFragment
+shared.Fragment = Fragment
+
+export {EFBaseComponent, EFNodeWrapper, EFTextFragment, Fragment}

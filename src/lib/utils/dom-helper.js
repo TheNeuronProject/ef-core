@@ -1,6 +1,10 @@
-import ARR from './array-helper.js'
+// import ARR from './array-helper.js'
 import isInstance from './fast-instance-of.js'
 import {prepareArgs} from './buble-fix.js'
+import dbg from './debug.js'
+import {inform, exec} from '../render-queue.js'
+
+import shared from './global-shared.js'
 
 const proto = Node.prototype
 
@@ -13,16 +17,16 @@ const EFFragment = class extends Array {
 	appendTo(node) {
 		DOM.append.apply(null, prepareArgs(this, node))
 	}
-	insertBeforeTo(node) {
-		const args = ARR.copy(this)
-		ARR.unshift(args, node)
-		DOM.before.apply(null, prepareArgs(this, node))
-	}
-	insertAfterTo(node) {
-		const args = ARR.copy(this)
-		ARR.unshift(args, node)
-		DOM.after.apply(null, prepareArgs(this, node))
-	}
+	// insertBeforeTo(node) {
+	// 	const args = ARR.copy(this)
+	// 	ARR.unshift(args, node)
+	// 	DOM.before.apply(null, prepareArgs(this, node))
+	// }
+	// insertAfterTo(node) {
+	// 	const args = ARR.copy(this)
+	// 	ARR.unshift(args, node)
+	// 	DOM.after.apply(null, prepareArgs(this, node))
+	// }
 	remove() {
 		for (let i of this) DOM.remove(i)
 	}
@@ -30,21 +34,29 @@ const EFFragment = class extends Array {
 
 DOM.before = (node, ...nodes) => {
 	const tempFragment = document.createDocumentFragment()
+	inform()
 	for (let i of nodes) {
-		if (isInstance(i, EFFragment)) i.appendTo(tempFragment)
+		if (i instanceof shared.EFBaseComponent) {
+			i.$mount({target: tempFragment})
+		} else if (isInstance(i, EFFragment)) i.appendTo(tempFragment)
 		else proto.appendChild.call(tempFragment, i)
 	}
 	proto.insertBefore.call(node.parentNode, tempFragment, node)
+	exec()
 }
 
 DOM.after = (node, ...nodes) => {
 	const tempFragment = document.createDocumentFragment()
+	inform()
 	for (let i of nodes) {
-		if (isInstance(i, EFFragment)) i.appendTo(tempFragment)
+		if (i instanceof shared.EFBaseComponent) {
+			i.$mount({target: tempFragment})
+		} else if (isInstance(i, EFFragment)) i.appendTo(tempFragment)
 		else proto.appendChild.call(tempFragment, i)
 	}
 	if (node.nextSibling) proto.insertBefore.call(node.parentNode, tempFragment, node.nextSibling)
 	else proto.appendChild.call(node.parentNode, tempFragment)
+	exec()
 }
 
 const handleMountingPoint = (mountingPoint, tempFragment) => {
@@ -62,15 +74,35 @@ const handleMountingPoint = (mountingPoint, tempFragment) => {
 }
 
 DOM.append = (node, ...nodes) => {
+	// Handle fragment
 	if (isInstance(node, EFFragment)) return node.push(...nodes)
+	// Handle EFComponent
+	if (node instanceof shared.EFBaseComponent) {
+		if (!(Array.isArray(node.children) && node.children.clear)) {
+			if (process.env.NODE_ENV !== 'production') dbg.warn(node, 'has no `children` list mount point! Child nodes are all ignored!')
+			return
+		}
+
+		inform()
+		for (let i of nodes) {
+			if (i instanceof Node) i = new shared.EFNodeWrapper(i)
+			node.children.push(i)
+		}
+		exec()
+
+		return
+	}
+
 	if ([1,9,11].indexOf(node.nodeType) === -1) return
 	const tempFragment = document.createDocumentFragment()
 	for (let i of nodes) {
 		if (isInstance(i, EFFragment)) i.appendTo(tempFragment)
-		else {
+		else if (i instanceof Node) {
 			proto.appendChild.call(tempFragment, i)
 			const mountingPoint = mountingPointStore.get(i)
 			if (mountingPoint) handleMountingPoint(mountingPoint, tempFragment)
+		} else if (i instanceof shared.EFBaseComponent) {
+			i.$mount({target: tempFragment})
 		}
 	}
 	proto.appendChild.call(node, tempFragment)
@@ -78,6 +110,7 @@ DOM.append = (node, ...nodes) => {
 
 DOM.remove = (node) => {
 	if (isInstance(node, EFFragment)) node.remove()
+	else if (node instanceof shared.EFBaseComponent) node.$umount()
 	else proto.removeChild.call(node.parentNode, node)
 }
 
