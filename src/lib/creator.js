@@ -41,7 +41,7 @@ const updateMountingNode = ({ctx, key, value}) => {
 	if (node === value) return
 
 	if (value instanceof Node) value = new shared.EFNodeWrapper(value)
-	else if (typeOf(value) === 'string') value = new shared.EFTextFragment(value)
+	else if (!(value instanceof shared.EFBaseComponent)) value = new shared.EFTextFragment(`${value}`)
 
 	inform()
 	// Update component
