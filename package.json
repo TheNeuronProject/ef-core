@@ -1,6 +1,6 @@
 {
   "name": "ef-core",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "description": "Core of ef.js (without parser)",
   "main": "dist/ef-core.min.js",
   "module": "src/ef-core.js",
