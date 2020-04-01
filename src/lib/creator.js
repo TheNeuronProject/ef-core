@@ -25,7 +25,7 @@ const bindTextNode = ({node, ctx, handlers, subscribers, innerData, element}) =>
 			textNode.textContent = ''
 			return
 		}
-		textNode.textContent = dataNode[_key]
+		textNode.textContent = value
 	}
 	handlerNode.push(handler)
 	queue([handler])
