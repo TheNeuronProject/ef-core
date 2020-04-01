@@ -68,7 +68,7 @@ const updateMountingList = ({ctx, key, value}) => {
 		node.clear()
 		for (let item of value) {
 			if (item instanceof Node) item = new shared.EFNodeWrapper(item)
-			else if (typeOf(item) === 'string') item = new shared.EFTextFragment(item)
+			else if (!(item instanceof shared.EFBaseComponent)) item = new shared.EFTextFragment(`${item}`)
 			if (item.$ctx.nodeInfo.parent) item.$umount()
 			DOM.append(fragment, item.$mount({parent: ctx.state, key}))
 		}
