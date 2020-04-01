@@ -25,7 +25,7 @@ const bindTextNode = ({node, ctx, handlers, subscribers, innerData, element}) =>
 			textNode.textContent = ''
 			return
 		}
-		textNode.textContent = dataNode[_key]
+		textNode.textContent = value
 	}
 	handlerNode.push(handler)
 	queue([handler])
@@ -41,7 +41,7 @@ const updateMountingNode = ({ctx, key, value}) => {
 	if (node === value) return
 
 	if (value instanceof Node) value = new shared.EFNodeWrapper(value)
-	else if (typeOf(value) === 'string') value = new shared.EFTextFragment(value)
+	else if (!(value instanceof shared.EFBaseComponent)) value = new shared.EFTextFragment(`${value}`)
 
 	inform()
 	// Update component
