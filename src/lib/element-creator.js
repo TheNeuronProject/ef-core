@@ -1,6 +1,6 @@
 import initBinding from './binding.js'
 import {queue, inform, exec} from './render-queue.js'
-import {resolveReactivePath} from './resolver.js'
+import {resolvePath} from './resolver.js'
 import ARR from './utils/array-helper.js'
 import {EFFragment} from './utils/dom-helper.js'
 import getEvent from './utils/event-helper.js'
@@ -145,7 +145,7 @@ const addProp = ({element, prop, key, ctx, handlers, subscribers, innerData, cus
 	const keyPath = key.split('.')
 	const lastKey = keyPath.pop()
 	if (custom) keyPath.unshift('$data')
-	const lastNode = resolveReactivePath(keyPath, element)
+	const lastNode = resolvePath(keyPath, element)
 	if (typeValid(prop)) {
 		lastNode[lastKey] = prop
 	} else {
