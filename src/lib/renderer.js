@@ -2,7 +2,7 @@ import {create, nullComponent, checkDestroyed} from './creator.js'
 import initBinding from './binding.js'
 import {queueDom, inform, exec} from './render-queue.js'
 import {resolveSubscriber} from './resolver.js'
-import registerProps from './register-props.js'
+import mapAttrs from './map-attrs.js'
 import {DOM, EFFragment, mountingPointStore} from './utils/dom-helper.js'
 import ARR from './utils/array-helper.js'
 import {assign, legacyAssign} from './utils/polyfills.js'
@@ -20,7 +20,17 @@ const unsubscribe = (pathStr, fn, subscribers) => {
 	ARR.remove(subscriberNode, fn)
 }
 
+/**
+ * The very basic ef component
+ * @class EFBaseComponent
+ */
 const EFBaseComponent = class {
+
+	/**
+	 * Create an EFBaseComponent
+	 * @param {Array} ast - ast for the component
+	 * @param {Object.<string,EFBaseComponent>} scope - scope which contains custom components
+	 */
 	constructor(ast, scope = {}) {
 		const children = {}
 		const refs = {}
@@ -73,11 +83,19 @@ const EFBaseComponent = class {
 		exec()
 	}
 
+	/**
+	 * Get data on the component
+	 * @returns {Object} Data on component
+	 */
 	get $data() {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		return this.$ctx.data
 	}
 
+	/**
+	 * Set data on the compnent
+	 * @param {Object} newData - Data to be set to component
+	 */
 	set $data(newData) {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		inform()
@@ -85,16 +103,28 @@ const EFBaseComponent = class {
 		exec()
 	}
 
+	/**
+	 * Get methods on the component
+	 * @returns {Object.<string,Function>} Methods on component
+	 */
 	get $methods() {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		return this.$ctx.methods
 	}
 
+	/**
+	 * Set methods on the component
+	 * @param {Object.<string,Function>} newMethods - Methods to be set to component
+	 */
 	set $methods(newMethods) {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		this.$ctx.methods = newMethods
 	}
 
+	/**
+	 * Get all references on the component
+	 * @returns {Object.<string,(Node|EFBaseComponent)>} References on component
+	 */
 	get $refs() {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		return this.$ctx.refs
@@ -275,25 +305,29 @@ const EFTextFragment = class extends EFBaseComponent {
 		exec()
 	}
 }
-registerProps(EFTextFragment, {text: {}})
+mapAttrs(EFTextFragment, {text: {}})
 
 enumerableFalse(EFBaseComponent, ['$mount', '$umount', '$subscribe', '$unsubscribe', '$update', '$dispatch', '$emit', '$on', '$off', '$destroy'])
 enumerableFalse(EFNodeWrapper, ['$el'])
 
+
+/**
+ * Transform almost anyting into ef component
+ * @param {*} value - Things to be transformed into ef component
+ * @returns {EFBaseComponent} Wrapped component
+ */
 const toEFComponent = (value) => {
 	if (value instanceof EFBaseComponent) return value
 	if (value !== nullComponent) {
-		if (value instanceof Node) return new shared.EFNodeWrapper(value)
-		else if (!(value instanceof shared.EFBaseComponent)) return new shared.EFTextFragment(`${value}`)
+		if (value instanceof Node) return new EFNodeWrapper(value)
+		else if (typeof value === 'string') return new EFTextFragment(value)
+		else return new EFTextFragment(JSON.stringify(value))
 	}
 
 	return value
 }
 
 shared.EFBaseComponent = EFBaseComponent
-shared.EFNodeWrapper = EFNodeWrapper
-shared.EFTextFragment = EFTextFragment
-shared.Fragment = Fragment
 shared.toEFComponent = toEFComponent
 
 export {EFBaseComponent, EFNodeWrapper, EFTextFragment, Fragment, toEFComponent}

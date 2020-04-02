@@ -85,7 +85,7 @@ DOM.append = (node, ...nodes) => {
 
 		inform()
 		for (let i of nodes) {
-			if (i instanceof Node) i = new shared.EFNodeWrapper(i)
+			i = new shared.toEFComponent(i)
 			node.children.push(i)
 		}
 		exec()
