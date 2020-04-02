@@ -1,9 +1,11 @@
-import {EFBaseComponent, EFTextFragment, Fragment} from './renderer.js'
+import {EFBaseComponent, Fragment, toEFComponent} from './renderer.js'
 import {assign} from './utils/polyfills.js'
 
-const textToFragment = (value) => {
-	if (typeof value === 'string') return new EFTextFragment(value)
-	return value
+const flatten = (prev, item) => {
+	if (Array.isArray(item)) prev.push(...item.map(toEFComponent))
+	else prev.push(toEFComponent(item))
+
+	return prev
 }
 
 const createElement = (tag, attrs, ...children) => {
@@ -13,7 +15,7 @@ const createElement = (tag, attrs, ...children) => {
 	// Create an instance if tag is an ef class
 	if (Object.isPrototypeOf.call(EFBaseComponent, tag)) {
 		if (children.length <= 0) return new tag(attrs)
-		return new tag(assign({children: children.map(textToFragment)}, attrs || {}))
+		return new tag(assign({children: children.reduce(flatten, [])}, attrs || {}))
 	}
 
 	// Else return the generated basic component

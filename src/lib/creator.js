@@ -40,10 +40,7 @@ const updateMountingNode = ({ctx, key, value}) => {
 	const {anchor, node} = child
 	if (node === value) return
 
-	if (value && value !== nullComponent) {
-		if (value instanceof Node) value = new shared.EFNodeWrapper(value)
-		else if (!(value instanceof shared.EFBaseComponent)) value = new shared.EFTextFragment(`${value}`)
-	}
+	value = shared.toEFComponent(value)
 
 	inform()
 	// Update component
@@ -69,8 +66,8 @@ const updateMountingList = ({ctx, key, value}) => {
 	if (node) {
 		node.clear()
 		for (let item of value) {
-			if (item instanceof Node) item = new shared.EFNodeWrapper(item)
-			else if (!(item instanceof shared.EFBaseComponent)) item = new shared.EFTextFragment(`${item}`)
+			item = shared.toEFComponent(item)
+
 			if (item.$ctx.nodeInfo.parent) item.$umount()
 			DOM.append(fragment, item.$mount({parent: ctx.state, key}))
 		}
@@ -126,6 +123,10 @@ const bindMountingList = ({ctx, key, anchor}) => {
 
 // Walk through the AST to perform proper actions
 const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, subscribers, svg, create}) => {
+	if (node instanceof Node) {
+		DOM.append(element, node)
+		return
+	}
 	switch (nodeType) {
 		// Static text node
 		case 'string': {

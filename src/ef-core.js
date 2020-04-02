@@ -3,7 +3,7 @@ import {EFBaseComponent, EFNodeWrapper, EFTextFragment, Fragment, toEFComponent}
 import {applyMountingPoint} from './lib/creator.js'
 import mountOptions from './mount-options.js'
 import createElement from './lib/jsx-create-element.js'
-import registerProps from './lib/register-props.js'
+import mapAttrs from './lib/map-attrs.js'
 import {onNextRender, inform, exec, bundle, isPaused} from './lib/render-queue.js'
 import dbg from './lib/utils/debug.js'
 import typeOf from './lib/utils/type-of.js'
@@ -52,6 +52,6 @@ const create = (value) => {
 	return EFComponent
 }
 
-export {create, registerProps, createElement, EFNodeWrapper, EFTextFragment, Fragment, toEFComponent, scoped, onNextRender, inform, exec, bundle, isPaused, mountOptions, version}
+export {create, mapAttrs, createElement, EFNodeWrapper, EFTextFragment, Fragment, toEFComponent, scoped, onNextRender, inform, exec, bundle, isPaused, mountOptions, version}
 
 if (process.env.NODE_ENV !== 'production') dbg.info(`ef-core v${version} initialized!`)

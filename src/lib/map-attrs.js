@@ -47,29 +47,37 @@ const getBase = (root) => {
 	}
 }
 
-const registerProps = (tpl, propMap) => {
-	for (let prop in propMap) {
+/**
+ * Definition of an attribute mapping
+ * @typedef {Object} AttrDef
+ * {string=} key - key to be accessed on base, default to `attr`
+ * {Function=} base - a function that returns the base of the key, default returns $data
+ * {bool=} checkTrue - a function returns true or false based on input value
+ * {*=} trueVal - value when true, only used when checkTrue is set
+ * {*=} falseVal - value when false, only used when checkTrue is set
+ * {Function=} get - getter, will ignore all other settings except set
+ * {Function=} set - setter, will ignore all other settings except get
+ */
 
-		/* Options:
-		 * key: key on root, default to prop
-		 * base: a function that returns the base of the key, default returns $data
-		 * trueVal: value when true, only used when checkTrue is set
-		 * falseVal: value when false, only used when checkTrue is set
-		 * checkTrue: a function returns true or false based on input value
-		 * get: getter, will ignore all other settings except set
-		 * set: setter, will ignore all other settings except get
-		 */
-		const options = propMap[prop]
+/**
+ * Data to attribute mapping helper
+ * @param {EFBaseComponent} tpl - Component class to be mapped
+ * @param {Object.<string,AttrDef>} attrMap - Attributes to be mapped
+ * @returns {EFBaseComponent} Mapped component class
+ */
+const mapAttrs = (tpl, attrMap) => {
+	for (let attr in attrMap) {
+		const options = attrMap[attr]
 
 		const base = getBase(options.base)
-		const key = options.key || prop
+		const key = options.key || attr
 
 		const basicProperty = {base, key}
 
 		const get = getGetter(basicProperty, options)
 		const set = getSetter(basicProperty, options)
 
-		Object.defineProperty(tpl.prototype, prop, {
+		Object.defineProperty(tpl.prototype, attr, {
 			get,
 			set,
 			enumerable: true,
@@ -80,4 +88,4 @@ const registerProps = (tpl, propMap) => {
 	return tpl
 }
 
-export default registerProps
+export default mapAttrs
