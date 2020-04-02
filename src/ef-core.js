@@ -1,5 +1,5 @@
 // Import everything
-import {EFBaseComponent, EFNodeWrapper, EFTextFragment, Fragment} from './lib/renderer.js'
+import {EFBaseComponent, EFNodeWrapper, EFTextFragment, Fragment, toEFComponent} from './lib/renderer.js'
 import {applyMountingPoint} from './lib/creator.js'
 import mountOptions from './mount-options.js'
 import createElement from './lib/jsx-create-element.js'
@@ -52,6 +52,6 @@ const create = (value) => {
 	return EFComponent
 }
 
-export {create, registerProps, createElement, EFNodeWrapper, EFTextFragment, Fragment, scoped, onNextRender, inform, exec, bundle, isPaused, mountOptions, version}
+export {create, registerProps, createElement, EFNodeWrapper, EFTextFragment, Fragment, toEFComponent, scoped, onNextRender, inform, exec, bundle, isPaused, mountOptions, version}
 
 if (process.env.NODE_ENV !== 'production') dbg.info(`ef-core v${version} initialized!`)

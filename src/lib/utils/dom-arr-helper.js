@@ -1,6 +1,7 @@
 import {DOM} from './dom-helper.js'
 import ARR from './array-helper.js'
 import {inform, exec} from '../render-queue.js'
+import shared from './global-shared.js'
 
 const DOMARR = {
 	empty() {
@@ -22,6 +23,7 @@ const DOMARR = {
 		return poped
 	},
 	push({ctx, key, anchor}, ...items) {
+		items = items.map(shared.toEFComponent)
 		const elements = []
 		inform()
 		for (let i of items) ARR.push(elements, i.$mount({parent: ctx.state, key}))
@@ -79,6 +81,7 @@ const DOMARR = {
 	},
 	unshift({ctx, key, anchor}, ...items) {
 		if (this.length === 0) return this.push(...items).length
+		items = items.map(shared.toEFComponent)
 		const elements = []
 		inform()
 		for (let i of items) ARR.push(elements, i.$mount({parent: ctx.state, key}))
