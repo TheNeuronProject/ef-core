@@ -280,9 +280,20 @@ registerProps(EFTextFragment, {text: {}})
 enumerableFalse(EFBaseComponent, ['$mount', '$umount', '$subscribe', '$unsubscribe', '$update', '$dispatch', '$emit', '$on', '$off', '$destroy'])
 enumerableFalse(EFNodeWrapper, ['$el'])
 
+const toEFComponent = (value) => {
+	if (value instanceof EFBaseComponent) return value
+	if (value !== nullComponent) {
+		if (value instanceof Node) return new shared.EFNodeWrapper(value)
+		else if (!(value instanceof shared.EFBaseComponent)) return new shared.EFTextFragment(`${value}`)
+	}
+
+	return value
+}
+
 shared.EFBaseComponent = EFBaseComponent
 shared.EFNodeWrapper = EFNodeWrapper
 shared.EFTextFragment = EFTextFragment
 shared.Fragment = Fragment
+shared.toEFComponent = toEFComponent
 
-export {EFBaseComponent, EFNodeWrapper, EFTextFragment, Fragment}
+export {EFBaseComponent, EFNodeWrapper, EFTextFragment, Fragment, toEFComponent}
