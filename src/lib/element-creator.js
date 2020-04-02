@@ -166,7 +166,7 @@ const rawHandler = val => val
 const addEvent = ({element, event, ctx, handlers, subscribers, innerData, custom}) => {
 	const addListener = custom && '$on' || 'addEventListener'
 
-	/**
+	/*
 	 *  l: listener                 : string
 	 *  m: method                   : string
 	 *  s: stopPropagation          : number/undefined
@@ -200,7 +200,7 @@ const addEvent = ({element, event, ctx, handlers, subscribers, innerData, custom
 const createElement = ({info, ctx, innerData, refs, handlers, subscribers, svg, fragment, custom}) => {
 	if (fragment) return new EFFragment()
 
-	/**
+	/*
 	 *  t: tag       : class | string | int, 0 means fragment
 	 *  a: attr      : object
 	 *  p: prop      : object
