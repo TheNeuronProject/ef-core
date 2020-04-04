@@ -10,14 +10,17 @@ const flatten = (prev, item) => {
 
 /**
  * @typedef {import('./renderer.js').EFBaseComponent} EFBaseComponent
+ * @typedef {import('./renderer.js').EFBaseClass} EFBaseClass
  */
 
+// eslint-disable-next-line valid-jsdoc
 /**
  * Create ef component from JSX
- * @param {(string|EFBaseComponent)} tag - JSX tag
+ * @template {EFBaseClass} T
+ * @param {(string|T)} tag - JSX tag
  * @param {Object.<string,*>} attrs - JSX attributes
  * @param  {...*} children - JSX children
- * @returns {EFBaseComponent} ef component created from JSX
+ * @returns {(EFBaseComponent|T extends {new (...args: any): infer R} ? R : never)} ef component created from JSX
  */
 const createElement = (tag, attrs, ...children) => {
 	// Create special component for fragment

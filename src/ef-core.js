@@ -34,16 +34,31 @@ const applyMountingPoints = (node, tpl) => {
 }
 
 /**
- * Return a brand new class for the new component
+ * @typedef {import('./mount-options.js').EFMountOption} EFMountOption
+ * @typedef {import('./mount-options.js').EFMountConfig} EFMountConfig
+ * @typedef {import('./lib/renderer.js').EFAST} EFAST
+ * @typedef {import('./lib/renderer.js').EFBaseClass} EFBaseClass
+ * @typedef {import('./lib/renderer.js').EFEventHandlerArg} EFEventHandlerArg
+ * @typedef {import('./lib/renderer.js').EFEventHandlerMethod} EFEventHandlerMethod
+ * @typedef {import('./lib/renderer.js').EFSubscriberHandlerArg} EFSubscriberHandlerArg
+ * @typedef {import('./lib/renderer.js').EFSubscriberHandlerMethod} EFSubscriberHandlerMethod
+ * @typedef {import('./lib/renderer.js').EFTemplateScope} EFTemplateScope
+ * @typedef {import('./lib/renderer.js').Fragment} Fragment
+ * @typedef {import('./lib/renderer.js').EFNodeWrapper} EFNodeWrapper
+ * @typedef {import('./lib/renderer.js').EFTextFragment} EFTextFragment
+ * @typedef {import('./lib/utils/event-helper.js').EFEventOptions} EFEventOptions
+ */
+
+// eslint-disable-next-line valid-jsdoc
+/**
+ * Create a brand new component class for the new component
  * @param {EFAST} ast - AST for the component
- * @returns {EFComponent} - Created component class from AST
  */
 const create = (ast) => {
 
 	/**
 	 * The very basic component which users can use
 	 * @class EFComponent
-	 * @extends EFBaseComponent
 	 * @param {Object=} initState - Initial state for the component to create with
 	 * @param {EFTemplateScope=} scope - Scope for the component to render template with
 	 */
