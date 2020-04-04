@@ -138,7 +138,8 @@ const getAttrHandler = (element, key, custom) => {
 const addAttr = ({element, attr, key, ctx, handlers, subscribers, innerData, custom}) => {
 	if (typeValid(attr)) {
 		if (custom) {
-			element[key] = attr
+			if (attr === '') element[key] = true
+			else element[key] = attr
 			return
 		}
 		// Handle xlink namespace
@@ -150,21 +151,20 @@ const addAttr = ({element, attr, key, ctx, handlers, subscribers, innerData, cus
 	queue([regTmpl({val: attr, ctx, handlers, subscribers, innerData, handler})])
 }
 
-const addProp = ({element, prop, key, ctx, handlers, subscribers, innerData, custom}) => {
-	const keyPath = key.split('.')
+const addProp = ({element, propPath, value, ctx, handlers, subscribers, innerData, custom}) => {
+	const keyPath = ARR.copy(propPath)
 	const lastKey = keyPath.pop()
 	if (custom) keyPath.unshift('$data')
 	const lastNode = resolvePath(keyPath, element)
-	if (typeValid(prop)) {
-		lastNode[lastKey] = prop
-	} else {
+	if (typeValid(value)) lastNode[lastKey] = value
+	else {
 		const handler = (val) => {
 			lastNode[lastKey] = val
 		}
-		const _handler = regTmpl({val: prop, ctx, handlers, subscribers, innerData, handler})
-		if ((key === 'value' ||
-			key === 'checked') &&
-			!prop[0]) addValListener({ctx, handlers, subscribers, innerData, element, key, expr: prop[1], custom})
+		const _handler = regTmpl({val: value, ctx, handlers, subscribers, innerData, handler})
+		if (propPath.length === 1 && ((lastKey === 'value' ||
+			lastKey === 'checked')) &&
+			!value[0]) addValListener({ctx, handlers, subscribers, innerData, element, key: lastKey, expr: value[1], custom})
 		queue([_handler])
 	}
 }
@@ -219,9 +219,9 @@ const createElement = ({info, ctx, innerData, refs, handlers, subscribers, svg, 
 	const {t, a, p, e, r} = info
 	const tag = ctx.scope[t] || t
 	const element = getElement({tag, ref: r, refs, svg, custom})
-	for (let key in a) addAttr({element, custom, attr: a[key], key, ctx, handlers, subscribers, innerData})
-	for (let key in p) addProp({element, custom, prop: p[key], key, ctx, handlers, subscribers, innerData})
-	for (let key in e) addEvent({element, custom, event: e[key], ctx, handlers, subscribers, innerData})
+	if (a) for (let key in a) addAttr({element, custom, attr: a[key], key, ctx, handlers, subscribers, innerData})
+	if (p) for (let [propPath, value] of p) addProp({element, custom, value, propPath, ctx, handlers, subscribers, innerData})
+	if (e) for (let event of e) addEvent({element, custom, event, ctx, handlers, subscribers, innerData})
 	return element
 }
 

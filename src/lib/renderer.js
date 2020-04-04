@@ -59,10 +59,10 @@ const unsubscribe = (pathStr, fn, subscribers) => {
  * @class EFBaseComponent
  * @param {EFAST} ast - ast for the component
  * @param {EFTemplateScope} scope - scope which contains custom components
- * @property {Object} ~$ctx - Inner component data, DO NOT TOUCH
+ * @private {Object} $ctx - Inner component data, DO NOT TOUCH
  * @property {Object} $data - Data on component
  * @property {Object.<string,EFEventHandlerMethod>} $methods - Methods on component
- * @property {Object.<string,EFBaseComponent>} $refs - References on component
+ * @property {Object.<string,(EFBaseComponent|Node)>} $refs - References on component
  */
 const EFBaseComponent = class {
 
@@ -353,6 +353,10 @@ const EFBaseComponent = class {
 	}
 }
 
+/**
+ * @typedef {typeof EFBaseComponent} EFBaseClass
+ */
+
 const fragmentAST = [{t: 0}]
 
 /**
@@ -423,9 +427,9 @@ enumerableFalse(EFNodeWrapper, ['$el'])
 
 /**
  * Transform almost anyting into ef component
- * @template {typeof value} T
+ * @template {value} T
  * @param {T} value - Things to be transformed into ef component
- * @returns {(EFBaseComponent|T)} - Wrapped component or value it self if not supports converting
+ * @returns {(EFNodeWrapper|EFTextFragment|T)} - Wrapped component or value it self if not supports converting
  */
 const toEFComponent = (value) => {
 	if (value === null || typeof value === 'undefined' || value instanceof EFBaseComponent) return value

@@ -48,7 +48,7 @@ const getBase = (root) => {
 }
 
 /**
- * @typedef {import('./renderer.js').EFBaseComponent} EFBaseComponent
+ * @typedef {import('./renderer.js').EFBaseClass} EFBaseClass
  */
 
 /**
@@ -65,7 +65,7 @@ const getBase = (root) => {
 
 /**
  * Data to attribute mapping helper
- * @template {EFBaseComponent} T
+ * @template {EFBaseClass} T
  * @param {T} tpl - Component class to be mapped
  * @param {Object.<string,AttrDef>} attrMap - Attributes to be mapped
  * @returns {T} - Mapped component class
