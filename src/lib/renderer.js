@@ -21,15 +21,55 @@ const unsubscribe = (pathStr, fn, subscribers) => {
 }
 
 /**
+ * @typedef {Array} EFAST
+ * @typedef {Object.<string,EFBaseComponent>} EFTemplateScope
+ */
+
+/**
+ * @typedef {Object} EFSubscriberHandlerArg
+ * @property {EFBaseComponent} ctx - The component who calls the handler
+ * @property {*} value - Value been subscribed
+ */
+
+/**
+ * @event Event
+ */
+
+/**
+ * @typedef {Object} EFEventHandlerArg
+ * @property {EFBaseComponent} ctx - The component who calls the handler
+ * @property {*} value - Value been passed to the event handler
+ * @property {Event} event - Event object that has been triggered
+ */
+
+/**
+ * @typedef {Function} EFSubscriberHandlerMethod
+ * @param {EFSubscriberHandlerArg} arg
+ * @returns {void}
+ */
+
+/**
+ * @typedef {Function} EFEventHandlerMethod
+ * @param {EFEventHandlerArg} arg
+ * @returns {void}
+ */
+
+/**
  * The very basic ef component
  * @class EFBaseComponent
+ * @param {EFAST} ast - ast for the component
+ * @param {EFTemplateScope} scope - scope which contains custom components
+ * @property {Object} ~$ctx - Inner component data, DO NOT TOUCH
+ * @property {Object} $data - Data on component
+ * @property {Object.<string,EFEventHandlerMethod>} $methods - Methods on component
+ * @property {Object.<string,EFBaseComponent>} $refs - References on component
  */
 const EFBaseComponent = class {
 
 	/**
-	 * Create an EFBaseComponent
-	 * @param {Array} ast - ast for the component
-	 * @param {Object.<string,EFBaseComponent>} scope - scope which contains custom components
+	 * Create an EFBaseComponent with ef AST
+	 * @param {EFAST} ast - ast for the component
+	 * @param {EFTemplateScope=} scope - scope which contains custom components
 	 */
 	constructor(ast, scope = {}) {
 		const children = {}
@@ -83,19 +123,11 @@ const EFBaseComponent = class {
 		exec()
 	}
 
-	/**
-	 * Get data on the component
-	 * @returns {Object} Data on component
-	 */
 	get $data() {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		return this.$ctx.data
 	}
 
-	/**
-	 * Set data on the compnent
-	 * @param {Object} newData - Data to be set to component
-	 */
 	set $data(newData) {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		inform()
@@ -103,33 +135,31 @@ const EFBaseComponent = class {
 		exec()
 	}
 
-	/**
-	 * Get methods on the component
-	 * @returns {Object.<string,Function>} Methods on component
-	 */
 	get $methods() {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		return this.$ctx.methods
 	}
 
-	/**
-	 * Set methods on the component
-	 * @param {Object.<string,Function>} newMethods - Methods to be set to component
-	 */
+
 	set $methods(newMethods) {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		this.$ctx.methods = newMethods
 	}
 
-	/**
-	 * Get all references on the component
-	 * @returns {Object.<string,(Node|EFBaseComponent)>} References on component
-	 */
 	get $refs() {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		return this.$ctx.refs
 	}
 
+	/**
+	 * @typedef {import('../mount-options.js').EFMountConfig} EFMountConfig
+	 */
+
+	/**
+	 * Mount component to a specitic position
+	 * @param {EFMountConfig} config - Mount contigurations
+	 * @returns {number} - Render count down
+	 */
 	$mount({target, option, parent, key}) {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		const { nodeInfo, mount } = this.$ctx
@@ -176,6 +206,9 @@ const EFBaseComponent = class {
 		return exec()
 	}
 
+	/**
+	 * @returns {number} - Render count down
+	 */
 	$umount() {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		const { nodeInfo, safeZone, mount } = this.$ctx
@@ -200,6 +233,12 @@ const EFBaseComponent = class {
 		return exec()
 	}
 
+	/**
+	 * Subscribe a value's changing
+	 * @param {string} pathStr - Path string to the subribed value based on `$data`, splitted by `.`
+	 * @param {EFSubscriberHandlerMethod} subscriber - Subscription event handler to be added
+	 * @returns {void}
+	 */
 	$subscribe(pathStr, subscriber) {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		const ctx = this.$ctx
@@ -218,12 +257,23 @@ const EFBaseComponent = class {
 		exec()
 	}
 
-	$unsubscribe(pathStr, fn) {
+	/**
+	 * Unsubscribe a value's changing
+	 * @param {string} pathStr - Path string to the subribed value based on `$data`, splitted by `.`
+	 * @param {EFSubscriberHandlerMethod} subscriber - Subscription event handler to be removed
+	 * @returns {void}
+	 */
+	$unsubscribe(pathStr, subscriber) {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		const { subscribers } = this.$ctx
-		unsubscribe(pathStr, fn, subscribers)
+		unsubscribe(pathStr, subscriber, subscribers)
 	}
 
+	/**
+	 * Update the component's state with a new state
+	 * @param {Object} newState - New state to be set on this component
+	 * @returns {void}
+	 */
 	$update(newState) {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		inform()
@@ -231,26 +281,55 @@ const EFBaseComponent = class {
 		exec()
 	}
 
+	/**
+	 * Fire a custom event using an Event object on this component
+	 * @param {Event} event - Event object to be dispatched on this component
+	 * @returns {*} - Same as the return of Node.dispatchEvent
+	 */
 	$dispatch(event) {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
-		this.$ctx.nodeInfo.placeholder.dispatchEvent(event)
+		return this.$ctx.nodeInfo.placeholder.dispatchEvent(event)
 	}
 
-	$emit(event, options) {
+	/**
+	 * @typedef {import('./utils/event-helper.js').EFEventOptions} EFEventOptions
+	 */
+
+	/**
+	 * Fire a custom event using event name on this component
+	 * @param {string} eventName - Name of the custom event
+	 * @param {EFEventOptions} options - Event Options
+	 * @returns {*} - Same as the return of Node.dispatchEvent
+	 */
+	$emit(eventName, options) {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
-		this.$dispatch(getEvent(event, options))
+		return this.$dispatch(getEvent(eventName, options))
 	}
 
+	/**
+	 * Add custom event listener on this component
+	 * @param {...*} args - Same as Node.addEventListener
+	 * @returns {*} - Same as the return of Node.addEventListener
+	 */
 	$on(...args) {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
-		this.$ctx.nodeInfo.placeholder.addEventListener(...args)
+		return this.$ctx.nodeInfo.placeholder.addEventListener(...args)
 	}
 
+	/**
+	 * Remove custom event listener on this component
+	 * @param {...*} args - Same as Node.removeEventListener
+	 * @returns {*} - Same as the return of Node.removeEventListener
+	 */
 	$off(...args) {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
-			this.$ctx.nodeInfo.placeholder.removeEventListener(...args)
+		return this.$ctx.nodeInfo.placeholder.removeEventListener(...args)
 	}
 
+	/**
+	 * Destroy this component
+	 * @returns {number} - Render count down
+	 */
 	$destroy() {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		const { nodeInfo, isFragment, children } = this.$ctx
@@ -275,7 +354,21 @@ const EFBaseComponent = class {
 }
 
 const fragmentAST = [{t: 0}]
+
+/**
+ * ef component node wrapper
+ * Better using this than Fragments if wrapping only HTML elements.
+ * @class EFNodeWrapper
+ * @extends EFBaseComponent
+ * @param {...Node} nodes - Nodes to be wrapped
+ * @property {Array<Node>} - Nodes that are wrapped
+ */
 const EFNodeWrapper = class extends EFBaseComponent {
+
+	/**
+	 * Wrap given nodes into an ef component
+	 * @param  {...Node} nodes - Nodes to be wrapped
+	 */
 	constructor(...nodes) {
 		super(fragmentAST)
 		// Use parens to bypass ESLint's semicolon check
@@ -289,15 +382,33 @@ const EFNodeWrapper = class extends EFBaseComponent {
 	}
 }
 
+/**
+ * Component fragment wrapper
+ * @class Fragment
+ * @extends EFBaseComponent
+ * @param {...*} children - Things to be wrapped into an ef component
+ */
 const Fragment = class extends EFBaseComponent {
 	constructor(...children) {
 		super([{t: 0}, ...children])
 	}
 }
 
-// Make a helper component for text fragments
 const textFragmentAst = [{t: 0},[['text']]]
+
+/**
+ * ef component text wrapper
+ * @class EFTextFragment
+ * @extends EFBaseComponent
+ * @param {string} text - String to be wrapped
+ * @property {string} text - Text on the fragment component
+ */
 const EFTextFragment = class extends EFBaseComponent {
+
+	/**
+	 * Wrap given text into an ef component
+	 * @param {string} text - String to be wrapped
+	 */
 	constructor(text) {
 		inform()
 		super(textFragmentAst)
@@ -310,21 +421,20 @@ mapAttrs(EFTextFragment, {text: {}})
 enumerableFalse(EFBaseComponent, ['$mount', '$umount', '$subscribe', '$unsubscribe', '$update', '$dispatch', '$emit', '$on', '$off', '$destroy'])
 enumerableFalse(EFNodeWrapper, ['$el'])
 
-
 /**
  * Transform almost anyting into ef component
- * @param {*} value - Things to be transformed into ef component
- * @returns {EFBaseComponent} Wrapped component
+ * @template {typeof value} T
+ * @param {T} value - Things to be transformed into ef component
+ * @returns {(EFBaseComponent|T)} - Wrapped component or value it self if not supports converting
  */
 const toEFComponent = (value) => {
-	if (value instanceof EFBaseComponent) return value
+	if (value === null || typeof value === 'undefined' || value instanceof EFBaseComponent) return value
+
 	if (value !== nullComponent) {
 		if (value instanceof Node) return new EFNodeWrapper(value)
 		else if (typeof value === 'string') return new EFTextFragment(value)
 		else return new EFTextFragment(JSON.stringify(value))
 	}
-
-	return value
 }
 
 shared.EFBaseComponent = EFBaseComponent

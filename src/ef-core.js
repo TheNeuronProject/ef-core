@@ -33,14 +33,31 @@ const applyMountingPoints = (node, tpl) => {
 	}
 }
 
-// Return a brand new class for the new component
-const create = (value) => {
-	const ast = value
+/**
+ * Return a brand new class for the new component
+ * @param {EFAST} ast - AST for the component
+ * @returns {EFComponent} - Created component class from AST
+ */
+const create = (ast) => {
+
+	/**
+	 * The very basic component which users can use
+	 * @class EFComponent
+	 * @extends EFBaseComponent
+	 * @param {Object=} initState - Initial state for the component to create with
+	 * @param {EFTemplateScope=} scope - Scope for the component to render template with
+	 */
 	const EFComponent = class extends EFBaseComponent {
-		constructor(newState, scope) {
+
+		/**
+		 * Create an EFComponent with initial state
+		 * @param {Object=} initState - Initial state for the component to create with
+		 * @param {EFTemplateScope=} scope - Scope for the component to render template with
+		 */
+		constructor(initState, scope) {
 			inform()
 			super(ast, scope)
-			if (newState) this.$update(newState)
+			if (initState) this.$update(initState)
 			exec()
 		}
 	}
@@ -52,6 +69,22 @@ const create = (value) => {
 	return EFComponent
 }
 
-export {create, mapAttrs, createElement, EFNodeWrapper, EFTextFragment, Fragment, toEFComponent, scoped, onNextRender, inform, exec, bundle, isPaused, mountOptions, version}
+export {
+	create,
+	mapAttrs,
+	createElement,
+	EFNodeWrapper,
+	EFTextFragment,
+	Fragment,
+	toEFComponent,
+	scoped,
+	onNextRender,
+	inform,
+	exec,
+	bundle,
+	isPaused,
+	mountOptions,
+	version
+}
 
 if (process.env.NODE_ENV !== 'production') dbg.info(`ef-core v${version} initialized!`)

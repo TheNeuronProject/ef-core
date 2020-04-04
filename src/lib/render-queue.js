@@ -1,5 +1,4 @@
 import ARR from './utils/array-helper.js'
-import dbg from './utils/debug.js'
 
 const modificationQueue = []
 const domQueue = []
@@ -10,8 +9,16 @@ const queue = handlers => modificationQueue.push(...handlers)
 const queueDom = handler => domQueue.push(handler)
 const onNextRender = handler => userQueue.push(handler)
 
+/**
+ * @returns {boolean} - Is render paused
+ */
 const isPaused = () => count > 0
 
+/**
+ * Add 1 to render count down.
+ * When countdown becomes 0, render will be triggered.
+ * @returns {number} - Render count down
+ */
 const inform = () => {
 	count += 1
 	return count
@@ -38,6 +45,12 @@ const execUserQueue = () => {
 	for (let i of userFnQueue) i()
 }
 
+/**
+ * Minus 1 to render count down.
+ * When countdown becomes 0, render will be triggered.
+ * @param {boolean} immediate - Render immediately, will force countdown become 0
+ * @returns {number} - Render count down
+ */
 const exec = (immediate) => {
 	if (!immediate && (count -= 1) > 0) return count
 	count = 0
@@ -52,13 +65,19 @@ const exec = (immediate) => {
 	return count
 }
 
+/**
+ * Run callback in a safe way, without worrying about unhandled errors may break rendering.
+ * @param {Function} cb - Callback function to be executed safly
+ * @returns {(void|Error)} - Error that happens when executing callback
+ */
 const bundle = (cb) => {
 	inform()
 	try {
-		return exec(cb(inform, exec))
+		// eslint-disable-next-line callback-return
+		exec(cb(inform, exec))
 	} catch (e) {
-		dbg.error('Error caught when executing bundle:\n', e)
-		return exec()
+		exec()
+		return e
 	}
 }
 
