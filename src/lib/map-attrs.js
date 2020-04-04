@@ -48,22 +48,27 @@ const getBase = (root) => {
 }
 
 /**
+ * @typedef {import('./renderer.js').EFBaseComponent} EFBaseComponent
+ */
+
+/**
  * Definition of an attribute mapping
  * @typedef {Object} AttrDef
- * {string=} key - key to be accessed on base, default to `attr`
- * {Function=} base - a function that returns the base of the key, default returns $data
- * {bool=} checkTrue - a function returns true or false based on input value
- * {*=} trueVal - value when true, only used when checkTrue is set
- * {*=} falseVal - value when false, only used when checkTrue is set
- * {Function=} get - getter, will ignore all other settings except set
- * {Function=} set - setter, will ignore all other settings except get
+ * @property {string=} key - key to be accessed on base, default to `attr`
+ * @property {Function=} base - a function that returns the base of the key, default returns $data
+ * @property {bool=} checkTrue - a function returns true or false based on input value
+ * @property {*=} trueVal - value when true, only used when checkTrue is set
+ * @property {*=} falseVal - value when false, only used when checkTrue is set
+ * @property {Function=} get - getter, will ignore all other settings except set
+ * @property {Function=} set - setter, will ignore all other settings except get
  */
 
 /**
  * Data to attribute mapping helper
- * @param {EFBaseComponent} tpl - Component class to be mapped
+ * @template {EFBaseComponent} T
+ * @param {T} tpl - Component class to be mapped
  * @param {Object.<string,AttrDef>} attrMap - Attributes to be mapped
- * @returns {EFBaseComponent} Mapped component class
+ * @returns {T} - Mapped component class
  */
 const mapAttrs = (tpl, attrMap) => {
 	for (let attr in attrMap) {
