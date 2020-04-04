@@ -37,7 +37,16 @@ const regTmpl = ({val, ctx, handlers, subscribers, innerData, handler}) => {
 	if (Array.isArray(val)) {
 		const [strs, ...exprs] = val
 		const tmpl = [strs]
-		const _handler = () => handler(mixVal(...tmpl))
+
+		let handling = false
+		const _handler = () => {
+			if (handling) return
+			handling = true
+			inform()
+			handler(mixVal(...tmpl))
+			exec()
+			handling = false
+		}
 		tmpl.push(...exprs.map((item) => {
 			const {dataNode, handlerNode, _key} = initBinding({bind: item, ctx, handlers, subscribers, innerData})
 			handlerNode.push(_handler)
@@ -48,21 +57,16 @@ const regTmpl = ({val, ctx, handlers, subscribers, innerData, handler}) => {
 	return () => val
 }
 
-const updateOthers = ({parentNode, handlerNode, _handler, _key, value}) => {
-	// Remove handler for this element temporarily
-	ARR.remove(handlerNode, _handler)
-	inform()
-	parentNode[_key] = value
-	exec()
-	// Add back the handler
-	ARR.push(handlerNode, _handler)
-}
-
-const addValListener = ({_handler, ctx, handlers, subscribers, innerData, element, key, expr, custom}) => {
+const addValListener = ({ctx, handlers, subscribers, innerData, element, key, expr, custom}) => {
 	const addListener = custom && '$on' || 'addEventListener'
 	const dispatch = custom && '$dispatch' || 'dispatchEvent'
-	const {parentNode, handlerNode, _key} = initBinding({bind: expr, ctx, handlers, subscribers, innerData})
-	const _update = () => updateOthers({parentNode, handlerNode, _handler, _key, value: element.value})
+	const {parentNode, _key} = initBinding({bind: expr, ctx, handlers, subscribers, innerData})
+	const _update = () => {
+		inform()
+		if (custom) parentNode[_key] = element.$data.value
+		else parentNode[_key] = element.value
+		exec()
+	}
 	if (key === 'value') {
 		// Listen to input, keyup and change events in order to work in most browsers.
 		element[addListener]('input', _update, true)
@@ -94,7 +98,12 @@ const addValListener = ({_handler, ctx, handlers, subscribers, innerData, elemen
 			}
 		}, true)
 		// Use custom event to avoid loops and conflicts
-		element[addListener]('ef-change-event', () => updateOthers({parentNode, handlerNode, _handler, _key, value: element.checked}))
+		element[addListener]('ef-change-event', () => {
+			inform()
+			if (custom) parentNode[_key] = element.$data.checked
+			else parentNode[_key] = element.checked
+			exec()
+		})
 	}
 }
 
@@ -155,7 +164,7 @@ const addProp = ({element, prop, key, ctx, handlers, subscribers, innerData, cus
 		const _handler = regTmpl({val: prop, ctx, handlers, subscribers, innerData, handler})
 		if ((key === 'value' ||
 			key === 'checked') &&
-			!prop[0]) addValListener({_handler, ctx, handlers, subscribers, innerData, element, key, expr: prop[1], custom})
+			!prop[0]) addValListener({ctx, handlers, subscribers, innerData, element, key, expr: prop[1], custom})
 		queue([_handler])
 	}
 }
