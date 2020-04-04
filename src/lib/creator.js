@@ -164,7 +164,7 @@ const create = ({node, ctx, innerData, refs, handlers, subscribers, svg}) => {
 	const fragment = info.t === 0
 	const custom = Object.isPrototypeOf.call(shared.EFBaseComponent, ctx.scope[info.t] || info.t)
 	// Enter SVG mode
-	if (!fragment && !svg && info.t.toLowerCase() === 'svg') svg = true
+	if (!fragment && !svg && !custom && info.t.toLowerCase() === 'svg') svg = true
 	// First create an element according to the description
 	const element = createElement({info, ctx, innerData, refs, handlers, subscribers, svg, fragment, custom})
 	if (fragment && process.env.NODE_ENV !== 'production') element.push(document.createComment('EF FRAGMENT START'))

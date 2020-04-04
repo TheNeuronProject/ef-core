@@ -1,9 +1,10 @@
 {
   "name": "ef-core",
-  "version": "0.10.5",
+  "version": "0.10.6",
   "description": "Core of ef.js (without parser)",
   "main": "dist/ef-core.min.js",
   "module": "src/ef-core.js",
+  "type": "./index.d.ts",
   "scripts": {
     "dev": "rollup -c ./config/rollup.dev.js -w",
     "build": "rollup -c ./config/rollup.prod.js",
