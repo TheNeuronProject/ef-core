@@ -25,3 +25,4 @@ node_modules/
 
 # local tools
 publish
+/out
