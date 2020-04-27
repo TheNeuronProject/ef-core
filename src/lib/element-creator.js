@@ -13,9 +13,9 @@ const typeValid = obj => ['number', 'boolean', 'string'].indexOf(typeof obj) > -
 const svgNS = 'http://www.w3.org/2000/svg'
 const mathNS = 'http://www.w3.org/1998/Math/MathML'
 const xlinkNS = 'http://www.w3.org/1999/xlink'
-const createByTag = (tag, svg, custom) => {
+const createByTag = (tag, svg) => {
 	// First Custom component
-	if (custom) return new tag()
+	if (typeof tag === 'function') return new tag()
 	// Then SVG
 	if (svg) return document.createElementNS(svgNS, tag)
 	// Then MathML
@@ -24,8 +24,8 @@ const createByTag = (tag, svg, custom) => {
 	return document.createElement(tag)
 }
 
-const getElement = ({tag, ref, refs, svg, custom}) => {
-	const element = createByTag(tag, svg, custom)
+const getElement = ({tag, ref, refs, svg}) => {
+	const element = createByTag(tag, svg)
 	if (ref) Object.defineProperty(refs, ref, {
 		value: element,
 		enumerable: true
@@ -38,20 +38,14 @@ const regTmpl = ({val, ctx, handlers, subscribers, innerData, handler}) => {
 		const [strs, ...exprs] = val
 		const tmpl = [strs]
 
-		let handling = false
-		const _handler = () => {
-			if (handling) return
-			handling = true
-			inform()
-			handler(mixVal(...tmpl))
-			exec()
-			handling = false
-		}
+		const _handler = () => handler(mixVal(...tmpl))
+
 		tmpl.push(...exprs.map((item) => {
 			const {dataNode, handlerNode, _key} = initBinding({bind: item, ctx, handlers, subscribers, innerData})
 			handlerNode.push(_handler)
 			return {dataNode, _key}
 		}))
+
 		return _handler
 	}
 	return () => val
@@ -218,7 +212,7 @@ const createElement = ({info, ctx, innerData, refs, handlers, subscribers, svg, 
 	 */
 	const {t, a, p, e, r} = info
 	const tag = ctx.scope[t] || t
-	const element = getElement({tag, ref: r, refs, svg, custom})
+	const element = getElement({tag, ref: r, refs, svg})
 	if (a) for (let key in a) addAttr({element, custom, attr: a[key], key, ctx, handlers, subscribers, innerData})
 	if (p) for (let [propPath, value] of p) addProp({element, custom, value, propPath, ctx, handlers, subscribers, innerData})
 	if (e) for (let event of e) addEvent({element, custom, event, ctx, handlers, subscribers, innerData})

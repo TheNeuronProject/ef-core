@@ -117,6 +117,10 @@ var template3 = parseEft(
 '\n>module2' +
 '\n.{{aaa}}')
 
+var template4 = parseEft(
+'\n>h1' +
+'\n  .This should be a button')
+
 var data1 = {
 	$data: {
 			class: 'box test class',
@@ -134,6 +138,7 @@ var data1 = {
 var module1 = ef.create(template)
 var module2 = ef.create(template2)
 var module3 = ef.create(template3)
+var module4 = ef.create(template4)
 
 class module1_1 extends module1 {
 	constructor(...args) {
@@ -248,4 +253,10 @@ state2.$methods.sendMsg = function (info) {
 // state4.$methods.sendMsg = function(thisState) { alert('The message is "\n' + thisState.$data.text + '"!') }
 state.$mount({target: document.body})
 state5.$mount({target: document.body})
+
+var customBtn = class extends HTMLButtonElement {}
+customElements.define('my-btn', customBtn, {extends: 'button'})
+var state6 = new module4(null, {h1: customBtn})
+
+state6.$mount({target: document.body})
 ef.exec()
