@@ -121,6 +121,11 @@ var template4 = parseEft(
 '\n>h1' +
 '\n  .This should be a button')
 
+var template5 = parseEft(
+'\n>button' +
+'\n  #is = my-btn' +
+'\n  .Click this should be get an alert')
+
 var data1 = {
 	$data: {
 			class: 'box test class',
@@ -139,6 +144,7 @@ var module1 = ef.create(template)
 var module2 = ef.create(template2)
 var module3 = ef.create(template3)
 var module4 = ef.create(template4)
+var module5 = ef.create(template5)
 
 class module1_1 extends module1 {
 	constructor(...args) {
@@ -254,9 +260,19 @@ state2.$methods.sendMsg = function (info) {
 state.$mount({target: document.body})
 state5.$mount({target: document.body})
 
-var customBtn = class extends HTMLButtonElement {}
+var customBtn = class extends HTMLButtonElement {
+	constructor(...args) {
+		super(...args)
+		this.addEventListener('click', () => {alert('my button clicked')})
+	}
+}
 customElements.define('my-btn', customBtn, {extends: 'button'})
 var state6 = new module4(null, {h1: customBtn})
-
 state6.$mount({target: document.body})
+
+var state7 = new module4(null, {h1: {tag: 'button', is: 'my-btn'}})
+state7.$mount({target: document.body})
+
+var state8 = new module5
+state8.$mount({target: document.body})
 ef.exec()
