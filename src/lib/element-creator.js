@@ -13,19 +13,29 @@ const typeValid = obj => ['number', 'boolean', 'string'].indexOf(typeof obj) > -
 const svgNS = 'http://www.w3.org/2000/svg'
 const mathNS = 'http://www.w3.org/1998/Math/MathML'
 const xlinkNS = 'http://www.w3.org/1999/xlink'
-const createByTag = (tag, svg) => {
-	// First Custom component
-	if (typeof tag === 'function') return new tag()
-	// Then SVG
-	if (svg) return document.createElementNS(svgNS, tag)
-	// Then MathML
-	if (tag.toLowerCase() === 'math') return document.createElementNS(mathNS, tag)
-	// Then HTML
-	return document.createElement(tag)
+const createByTag = ({tagName, tagContent, attrs, svg}) => {
+	const tagType = typeof tagContent
+
+	if (tagType === 'string') {
+		// Then SVG
+		if (svg) return document.createElementNS(svgNS, tagContent)
+		// Then MathML
+		if (tagContent.toLowerCase() === 'math') return document.createElementNS(mathNS, tagContent)
+		// Then custom basic elements
+		if (tagName === tagContent && attrs && attrs.is && typeof attrs.is === 'string') return document.createElement(tagContent, {is: attrs.is})
+		// Then basic HTMLElements
+		return document.createElement(tagContent)
+	}
+
+	// Then custom component or class based custom component
+	if (tagType === 'function') return new tagContent()
+
+	// Then overriden basic element
+	return document.createElement(tagContent.tag || tagName, {is: tagContent.is})
 }
 
-const getElement = ({tag, ref, refs, svg}) => {
-	const element = createByTag(tag, svg)
+const getElement = ({tagName, tagContent, attrs, ref, refs, svg}) => {
+	const element = createByTag({tagName, tagContent, attrs, svg})
 	if (ref) Object.defineProperty(refs, ref, {
 		value: element,
 		enumerable: true
@@ -211,8 +221,9 @@ const createElement = ({info, ctx, innerData, refs, handlers, subscribers, svg, 
 	 *  r: reference : string
 	 */
 	const {t, a, p, e, r} = info
-	const tag = ctx.scope[t] || t
-	const element = getElement({tag, ref: r, refs, svg})
+	const tagName = t
+	const tagContent = ctx.scope[t] || t
+	const element = getElement({tagName, tagContent, attrs: a, ref: r, refs, svg})
 	if (a) for (let key in a) addAttr({element, custom, attr: a[key], key, ctx, handlers, subscribers, innerData})
 	if (p) for (let [propPath, value] of p) addProp({element, custom, value, propPath, ctx, handlers, subscribers, innerData})
 	if (e) for (let event of e) addEvent({element, custom, event, ctx, handlers, subscribers, innerData})
