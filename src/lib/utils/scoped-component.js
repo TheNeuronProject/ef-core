@@ -1,3 +1,5 @@
+import {assign} from './polyfills.js'
+
 /**
  * @typedef {import('../renderer.js').EFBaseClass} EFBaseClass
  * @typedef {import('../renderer.js').EFTemplateScope} EFTemplateScope
@@ -11,8 +13,9 @@
  * @returns {T} - Scoped component class
  */
 const scoped = (component, initScope) => class extends component {
-	constructor(state, scope = initScope) {
-		super(state, scope)
+	constructor(state, scope = {}) {
+		const _scope = assign({}, initScope)
+		super(state, assign(_scope, scope))
 	}
 }
 
