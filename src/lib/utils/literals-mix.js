@@ -20,4 +20,4 @@ const mixVal = (strs, ...exprs) => {
 	return mixStr(...template)
 }
 
-export { mixStr, mixVal }
+export {mixStr, mixVal}

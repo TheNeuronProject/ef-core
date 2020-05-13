@@ -90,10 +90,10 @@ const EFBaseComponent = class {
 		 * Split safe zone to each component in order to make
 		 * the component memory recycleable when lost reference
 		 */
-		const safeZone = document.createDocumentFragment()
+		const safeZone = DOM.document.createDocumentFragment()
 
-		if (process.env.NODE_ENV === 'production') nodeInfo.placeholder = document.createTextNode('')
-		else nodeInfo.placeholder = document.createComment('EF COMPONENT PLACEHOLDER')
+		if (process.env.NODE_ENV === 'production') nodeInfo.placeholder = DOM.document.createTextNode('')
+		else nodeInfo.placeholder = DOM.document.createComment('EF COMPONENT PLACEHOLDER')
 
 		const mount = () => {
 			if (nodeInfo.replace.length > 0) {

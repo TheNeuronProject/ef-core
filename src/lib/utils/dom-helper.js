@@ -1,12 +1,12 @@
 // import ARR from './array-helper.js'
 import isInstance from './fast-instance-of.js'
+import {assign} from './polyfills.js'
 import {prepareArgs} from './buble-fix.js'
 import dbg from './debug.js'
+import isBrowser from './is-browser.js'
 import {inform, exec} from '../render-queue.js'
 
 import shared from './global-shared.js'
-
-const proto = Node.prototype
 
 // Will require a weakmap polyfill for IE10 and below
 const mountingPointStore = new WeakMap()
@@ -33,29 +33,29 @@ const EFFragment = class extends Array {
 }
 
 DOM.before = (node, ...nodes) => {
-	const tempFragment = document.createDocumentFragment()
+	const tempFragment = DOM.document.createDocumentFragment()
 	inform()
 	for (let i of nodes) {
 		if (i instanceof shared.EFBaseComponent) {
 			i.$mount({target: tempFragment})
 		} else if (isInstance(i, EFFragment)) i.appendTo(tempFragment)
-		else proto.appendChild.call(tempFragment, i)
+		else DOM.Node.prototype.appendChild.call(tempFragment, i)
 	}
-	proto.insertBefore.call(node.parentNode, tempFragment, node)
+	DOM.Node.prototype.insertBefore.call(node.parentNode, tempFragment, node)
 	exec()
 }
 
 DOM.after = (node, ...nodes) => {
-	const tempFragment = document.createDocumentFragment()
+	const tempFragment = DOM.document.createDocumentFragment()
 	inform()
 	for (let i of nodes) {
 		if (i instanceof shared.EFBaseComponent) {
 			i.$mount({target: tempFragment})
 		} else if (isInstance(i, EFFragment)) i.appendTo(tempFragment)
-		else proto.appendChild.call(tempFragment, i)
+		else DOM.Node.prototype.appendChild.call(tempFragment, i)
 	}
-	if (node.nextSibling) proto.insertBefore.call(node.parentNode, tempFragment, node.nextSibling)
-	else proto.appendChild.call(node.parentNode, tempFragment)
+	if (node.nextSibling) DOM.Node.prototype.insertBefore.call(node.parentNode, tempFragment, node.nextSibling)
+	else DOM.Node.prototype.appendChild.call(node.parentNode, tempFragment)
 	exec()
 }
 
@@ -94,24 +94,24 @@ DOM.append = (node, ...nodes) => {
 	}
 
 	if ([1,9,11].indexOf(node.nodeType) === -1) return
-	const tempFragment = document.createDocumentFragment()
+	const tempFragment = DOM.document.createDocumentFragment()
 	for (let i of nodes) {
 		if (isInstance(i, EFFragment)) i.appendTo(tempFragment)
-		else if (i instanceof Node) {
-			proto.appendChild.call(tempFragment, i)
+		else if (i instanceof DOM.Node) {
+			DOM.Node.prototype.appendChild.call(tempFragment, i)
 			const mountingPoint = mountingPointStore.get(i)
 			if (mountingPoint) handleMountingPoint(mountingPoint, tempFragment)
 		} else if (i instanceof shared.EFBaseComponent) {
 			i.$mount({target: tempFragment})
 		}
 	}
-	proto.appendChild.call(node, tempFragment)
+	DOM.Node.prototype.appendChild.call(node, tempFragment)
 }
 
 DOM.remove = (node) => {
 	if (isInstance(node, EFFragment)) node.remove()
 	else if (node instanceof shared.EFBaseComponent) node.$umount()
-	else proto.removeChild.call(node.parentNode, node)
+	else DOM.Node.prototype.removeChild.call(node.parentNode, node)
 }
 
 // addClass(node, className) {
@@ -140,7 +140,7 @@ DOM.remove = (node) => {
 
 // replaceWith(node, newNode) {
 // 	const parent = node.parentNode
-// 	if (parent) proto.replaceChild.call(parent, newNode, node)
+// 	if (parent) DOM.Node.prototype.replaceChild.call(parent, newNode, node)
 // },
 
 // swap(node, newNode) {
@@ -149,8 +149,8 @@ DOM.remove = (node) => {
 // 	const nodeSibling = node.nextSibling
 // 	const newNodeSibling = newNode.nextSibling
 // 	if (nodeParent && newNodeParent) {
-// 		proto.insertBefore.call(nodeParent, newNode, nodeSibling)
-// 		proto.insertBefore.call(newNodeParent, node, newNodeSibling)
+// 		DOM.Node.prototype.insertBefore.call(nodeParent, newNode, nodeSibling)
+// 		DOM.Node.prototype.insertBefore.call(newNodeParent, node, newNodeSibling)
 // 	}
 // },
 
@@ -158,27 +158,27 @@ DOM.remove = (node) => {
 // 	if ([1,9,11].indexOf(node.nodeType) === -1) {
 // 		return
 // 	}
-// 	const tempFragment = document.createDocumentFragment()
+// 	const tempFragment = DOM.document.createDocumentFragment()
 // 	nodes.reverse()
 // 	for (let i of nodes) {
-// 		proto.appendChild.call(tempFragment, i)
+// 		DOM.Node.prototype.appendChild.call(tempFragment, i)
 // 	}
 // 	if (node.firstChild) {
-// 		proto.insertBefore.call(node, tempFragment, node.firstChild)
+// 		DOM.Node.prototype.insertBefore.call(node, tempFragment, node.firstChild)
 // 	} else {
-// 		proto.appendChild.call(node, tempFragment)
+// 		DOM.Node.prototype.appendChild.call(node, tempFragment)
 // 	}
 // },
 
 // appendTo(node, newNode) {
-// 	proto.appendChild.call(newNode, node)
+// 	DOM.Node.prototype.appendChild.call(newNode, node)
 // },
 
 // prependTo(node, newNode) {
 // 	if (newNode.firstChild) {
-// 		proto.insertBefore.call(newNode, node, node.firstChild)
+// 		DOM.Node.prototype.insertBefore.call(newNode, node, node.firstChild)
 // 	} else {
-// 		proto.appendChild.call(newNode, node)
+// 		DOM.Node.prototype.appendChild.call(newNode, node)
 // 	}
 // },
 
@@ -186,4 +186,8 @@ DOM.remove = (node) => {
 // 	node.innerHTML = ''
 // },
 
-export {DOM, EFFragment, mountingPointStore}
+const setDOMSimulation = sim => assign(DOM, sim)
+
+if (isBrowser) setDOMSimulation({Node, document})
+
+export {DOM, EFFragment, mountingPointStore, setDOMSimulation}
