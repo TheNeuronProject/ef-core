@@ -8,6 +8,7 @@ import {onNextRender, inform, exec, bundle, isPaused} from './lib/render-queue.j
 import dbg from './lib/utils/debug.js'
 import typeOf from './lib/utils/type-of.js'
 import scoped from './lib/utils/scoped-component.js'
+import {setDOMSimulation} from './lib/utils/dom-helper.js'
 import {version} from '../package.json'
 
 // Apply mounting point properties for classes
@@ -99,6 +100,7 @@ export {
 	bundle,
 	isPaused,
 	mountOptions,
+	setDOMSimulation,
 	version
 }
 

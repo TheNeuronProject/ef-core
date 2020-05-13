@@ -1,6 +1,6 @@
 const getGetter = ({base, key}, {checkTrue, get, set}) => {
 	if (get) {
-		if (!set) throw new Error('Setter must be defined when getter exists')
+		if (!set) throw new Error('[EF] Setter must be defined when getter exists')
 		return get
 	}
 
@@ -15,7 +15,7 @@ const getGetter = ({base, key}, {checkTrue, get, set}) => {
 
 const getSetter = ({base, key}, {checkTrue, trueVal, falseVal, get, set}) => {
 	if (set) {
-		if (!get) throw new Error('Getter must be defined when setter exists')
+		if (!get) throw new Error('[EF] Getter must be defined when setter exists')
 		return set
 	}
 

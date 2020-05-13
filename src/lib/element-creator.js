@@ -2,7 +2,7 @@ import initBinding from './binding.js'
 import {queue, inform, exec} from './render-queue.js'
 import {resolvePath} from './resolver.js'
 import ARR from './utils/array-helper.js'
-import {EFFragment} from './utils/dom-helper.js'
+import {DOM, EFFragment} from './utils/dom-helper.js'
 import getEvent from './utils/event-helper.js'
 import {mixVal} from './utils/literals-mix.js'
 import dbg from './utils/debug.js'
@@ -18,20 +18,20 @@ const createByTag = ({tagName, tagContent, attrs, svg}) => {
 
 	if (tagType === 'string') {
 		// Then SVG
-		if (svg) return document.createElementNS(svgNS, tagContent)
+		if (svg) return DOM.document.createElementNS(svgNS, tagContent)
 		// Then MathML
-		if (tagContent.toLowerCase() === 'math') return document.createElementNS(mathNS, tagContent)
+		if (tagContent.toLowerCase() === 'math') return DOM.document.createElementNS(mathNS, tagContent)
 		// Then custom basic elements
-		if (tagName === tagContent && attrs && attrs.is && typeof attrs.is === 'string') return document.createElement(tagContent, {is: attrs.is})
+		if (tagName === tagContent && attrs && attrs.is && typeof attrs.is === 'string') return DOM.document.createElement(tagContent, {is: attrs.is})
 		// Then basic HTMLElements
-		return document.createElement(tagContent)
+		return DOM.document.createElement(tagContent)
 	}
 
 	// Then custom component or class based custom component
 	if (tagType === 'function') return new tagContent()
 
 	// Then overriden basic element
-	return document.createElement(tagContent.tag || tagName, {is: tagContent.is})
+	return DOM.document.createElement(tagContent.tag || tagName, {is: tagContent.is})
 }
 
 const getElement = ({tagName, tagContent, attrs, ref, refs, svg}) => {
@@ -89,7 +89,7 @@ const addValListener = ({ctx, handlers, subscribers, innerData, element, key, ex
 			element[dispatch](getEvent('ef-change-event'), {bubbles: true, canceoable: false})
 			if (element.tagName === 'INPUT' && element.type === 'radio' && element.name !== '') {
 				// Trigger change to the the same named radios
-				const radios = document.querySelectorAll(`input[name=${element.name}][type=radio]`)
+				const radios = DOM.document.querySelectorAll(`input[name=${element.name}][type=radio]`)
 				if (radios) {
 					const selected = ARR.copy(radios)
 					ARR.remove(selected, element)
@@ -227,6 +227,7 @@ const createElement = ({info, ctx, innerData, refs, handlers, subscribers, svg, 
 	if (a) for (let key in a) addAttr({element, custom, attr: a[key], key, ctx, handlers, subscribers, innerData})
 	if (p) for (let [propPath, value] of p) addProp({element, custom, value, propPath, ctx, handlers, subscribers, innerData})
 	if (e) for (let event of e) addEvent({element, custom, event, ctx, handlers, subscribers, innerData})
+
 	return element
 }
 
