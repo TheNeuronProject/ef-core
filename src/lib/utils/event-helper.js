@@ -1,3 +1,5 @@
+import {DOM} from './dom-helper.js'
+
 /**
  * @typedef {{bubbles: boolean, cancelable: boolean}} EFEventOptions
  */
@@ -9,7 +11,7 @@ const getEvent = (name, {bubbles, cancelable} = {
 	bubbles: false,
 	cancelable: false
 }) => {
-	const event = document.createEvent('CustomEvent')
+	const event = DOM.document.createEvent('CustomEvent')
 	event.initEvent(name, bubbles, cancelable)
 	return event
 }

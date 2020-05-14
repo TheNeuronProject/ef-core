@@ -186,8 +186,8 @@ DOM.remove = (node) => {
 // 	node.innerHTML = ''
 // },
 
-const setDOMSimulation = sim => assign(DOM, sim)
+const setDOMImpl = sim => assign(DOM, sim)
 
-if (isBrowser) setDOMSimulation({Node, document})
+if (isBrowser) setDOMImpl({Node, document})
 
-export {DOM, EFFragment, mountingPointStore, setDOMSimulation}
+export {DOM, EFFragment, mountingPointStore, setDOMImpl}
