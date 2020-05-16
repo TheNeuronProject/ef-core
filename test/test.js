@@ -276,3 +276,66 @@ state7.$mount({target: document.body})
 var state8 = new module5
 state8.$mount({target: document.body})
 ef.exec()
+
+const {inform, exec, create, scoped} = ef
+
+const ListHolder = create(parseEft(`+children`))
+const LogicContainer = create(parseEft(`-childrenHolder`))
+
+const efLogic = class extends LogicContainer {
+	constructor(...args) {
+		inform()
+		super(...args)
+		this.$ctx.childrenHolder = new ListHolder()
+		exec()
+	}
+
+	set ifTrue(value) {
+		if (value) this.childrenHolder = this.$ctx.childrenHolder
+		else this.childrenHolder = null
+	}
+
+	set ifFalse(value) {
+		if (value) this.childrenHolder = null
+		else this.childrenHolder = this.$ctx.childrenHolder
+	}
+
+	get children() {
+		return this.$ctx.childrenHolder.children
+	}
+
+	set children(children) {
+		this.$ctx.childrenHolder.children = children
+	}
+}
+
+const App = scoped(create(parseEft(`
+>br
+>input
+	#type = checkbox
+	#id = input-box
+	%checked = {{show = true}}
+>label
+	#for = input-box
+	.{{show}}
+>Logic#logic
+	#ifTrue = {{show}}
+	>pre
+		.Show only when checkbox is checked!
+	.---layer {{layer}} start---
+	+list
+	>br
+	-mount
+	.---layer {{layer}} end---
+`)), {Logic: efLogic})
+
+inform()
+const app = new App({$data: {show: true, layer: 0}})
+
+app.list.push(new App({$data: {show: false, layer: 1}}))
+exec()
+
+app.list[0].list.push(new App({$data: {show: false, layer: 2}}))
+
+
+app.$mount({target: document.body})

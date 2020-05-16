@@ -4,6 +4,7 @@ import {assign} from './polyfills.js'
 import {prepareArgs} from './buble-fix.js'
 import dbg from './debug.js'
 import isBrowser from './is-browser.js'
+import ARR from './array-helper.js'
 import {inform, exec} from '../render-queue.js'
 
 import shared from './global-shared.js'
@@ -13,23 +14,47 @@ const mountingPointStore = new WeakMap()
 
 const DOM = {}
 
-const EFFragment = class extends Array {
+const EFFragment = class {
+	constructor() {
+		this.$children = []
+		this.$safeZone = DOM.document.createDocumentFragment()
+	}
+
+	append(...args) {
+		DOM.append.apply(null, prepareArgs(args, this.$safeZone))
+		return this.$children.push(...args)
+	}
+
 	appendTo(node) {
-		DOM.append.apply(null, prepareArgs(this, node))
+		DOM.append.apply(null, prepareArgs(this.$children, node))
 	}
-	// insertBeforeTo(node) {
-	// 	const args = ARR.copy(this)
-	// 	ARR.unshift(args, node)
-	// 	DOM.before.apply(null, prepareArgs(this, node))
-	// }
-	// insertAfterTo(node) {
-	// 	const args = ARR.copy(this)
-	// 	ARR.unshift(args, node)
-	// 	DOM.after.apply(null, prepareArgs(this, node))
-	// }
+
+	removeChild(node) {
+		DOM.remove(node)
+		ARR.remove(this.$children, node)
+	}
+
 	remove() {
-		for (let i of this) DOM.remove(i)
+		for (let i of this.$children) DOM.append(this.$safeZone, i)
 	}
+}
+
+const appendNode = (node, tempFragment) => {
+	const {element, placeholder} = node.$ctx.nodeInfo
+	DOM.append(tempFragment, element, placeholder)
+}
+
+const handleMountingPoint = (element, tempFragment) => {
+	if (element.nodeType !== 3) return
+
+	const mountingPoint = mountingPointStore.get(element)
+	if (!mountingPoint) return
+
+	const {node} = mountingPoint
+	if (!node) return
+	if (Array.isArray(node)) {
+		for (let i of node) appendNode(i, tempFragment)
+	} else appendNode(node, tempFragment)
 }
 
 DOM.before = (node, ...nodes) => {
@@ -39,7 +64,10 @@ DOM.before = (node, ...nodes) => {
 		if (i instanceof shared.EFBaseComponent) {
 			i.$mount({target: tempFragment})
 		} else if (isInstance(i, EFFragment)) i.appendTo(tempFragment)
-		else DOM.Node.prototype.appendChild.call(tempFragment, i)
+		else {
+			DOM.Node.prototype.appendChild.call(tempFragment, i)
+			handleMountingPoint(i, tempFragment)
+		}
 	}
 	DOM.Node.prototype.insertBefore.call(node.parentNode, tempFragment, node)
 	exec()
@@ -59,26 +87,12 @@ DOM.after = (node, ...nodes) => {
 	exec()
 }
 
-const handleMountingPoint = (mountingPoint, tempFragment) => {
-	const {node} = mountingPoint
-	if (!node) return
-	if (Array.isArray(node) && node.clear) {
-		for (let j of node) {
-			const {element, placeholder} = j.$ctx.nodeInfo
-			DOM.append(tempFragment, element, placeholder)
-		}
-	} else {
-		const {element, placeholder} = node.$ctx.nodeInfo
-		DOM.append(tempFragment, element, placeholder)
-	}
-}
-
 DOM.append = (node, ...nodes) => {
 	// Handle fragment
-	if (isInstance(node, EFFragment)) return node.push(...nodes)
+	if (isInstance(node, EFFragment)) return node.append(...nodes)
 	// Handle EFComponent
 	if (node instanceof shared.EFBaseComponent) {
-		if (!(Array.isArray(node.children) && node.children.clear)) {
+		if (!(Array.isArray(node.children))) {
 			if (process.env.NODE_ENV !== 'production') dbg.warn(node, 'has no `children` list mount point! Child nodes are all ignored!')
 			return
 		}
@@ -99,8 +113,7 @@ DOM.append = (node, ...nodes) => {
 		if (isInstance(i, EFFragment)) i.appendTo(tempFragment)
 		else if (i instanceof DOM.Node) {
 			DOM.Node.prototype.appendChild.call(tempFragment, i)
-			const mountingPoint = mountingPointStore.get(i)
-			if (mountingPoint) handleMountingPoint(mountingPoint, tempFragment)
+			handleMountingPoint(i, tempFragment)
 		} else if (i instanceof shared.EFBaseComponent) {
 			i.$mount({target: tempFragment})
 		}
