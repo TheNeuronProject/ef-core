@@ -226,7 +226,7 @@ const EFBaseComponent = class {
 					} else parent[key] = nullComponent
 				}
 			// Else Remove elements from fragment parent
-			} else if (isInstance(parent, EFFragment)) ARR.remove(parent.$ctx.nodeInfo.element.$children, nodeInfo.element)
+			} else if (isInstance(parent, EFFragment)) parent.$ctx.nodeInfo.element.removeChild(nodeInfo.element)
 		}
 		DOM.append(safeZone, nodeInfo.placeholder)
 		queueDom(mount)
@@ -376,10 +376,11 @@ const EFNodeWrapper = class extends EFBaseComponent {
 	constructor(...nodes) {
 		super(fragmentAST)
 
-		const childrenArr = this.$ctx.nodeInfo.element.$children
-		childrenArr.push(...nodes)
+		const element = this.$ctx.nodeInfo.element
+		const childrenArr = element.$children
+		element.append(...nodes)
 
-		if (process.env.NODE_ENV !== 'production') childrenArr.push(ARR.remove(childrenArr, childrenArr[1]))
+		if (process.env.NODE_ENV !== 'production') element.append(ARR.remove(childrenArr, childrenArr[1]))
 
 		this.$ctx.elements = nodes
 	}

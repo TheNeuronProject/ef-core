@@ -4,6 +4,7 @@ import {assign} from './polyfills.js'
 import {prepareArgs} from './buble-fix.js'
 import dbg from './debug.js'
 import isBrowser from './is-browser.js'
+import ARR from './array-helper.js'
 import {inform, exec} from '../render-queue.js'
 
 import shared from './global-shared.js'
@@ -16,14 +17,25 @@ const DOM = {}
 const EFFragment = class {
 	constructor() {
 		this.$children = []
+		this.$safeZone = DOM.document.createDocumentFragment()
+	}
+
+	append(...args) {
+		DOM.append.apply(null, prepareArgs(args, this.$safeZone))
+		return this.$children.push(...args)
 	}
 
 	appendTo(node) {
 		DOM.append.apply(null, prepareArgs(this.$children, node))
 	}
 
+	removeChild(node) {
+		DOM.remove(node)
+		ARR.remove(this.$children, node)
+	}
+
 	remove() {
-		for (let i of this.$children) DOM.remove(i)
+		for (let i of this.$children) DOM.append(this.$safeZone, i)
 	}
 }
 
@@ -72,13 +84,12 @@ DOM.after = (node, ...nodes) => {
 	}
 	if (node.nextSibling) DOM.Node.prototype.insertBefore.call(node.parentNode, tempFragment, node.nextSibling)
 	else DOM.Node.prototype.appendChild.call(node.parentNode, tempFragment)
-	// else node.push(tempFragment.c)
 	exec()
 }
 
 DOM.append = (node, ...nodes) => {
 	// Handle fragment
-	if (isInstance(node, EFFragment)) return node.$children.push(...nodes)
+	if (isInstance(node, EFFragment)) return node.append(...nodes)
 	// Handle EFComponent
 	if (node instanceof shared.EFBaseComponent) {
 		if (!(Array.isArray(node.children))) {
