@@ -103,10 +103,8 @@ const applyMountingPoint = (type, key, tpl) => {
 const bindMountingNode = ({ctx, key, anchor}) => {
 	const {children, isFragment} = ctx
 	children[key] = {anchor}
-	if (isFragment) {
-		DOM.append(ctx.safeZone, anchor)
-		mountingPointStore.set(anchor, children[key])
-	}
+	mountingPointStore.set(anchor, children[key])
+	if (isFragment) DOM.append(ctx.safeZone, anchor)
 }
 
 const bindMountingList = ({ctx, key, anchor}) => {
@@ -115,10 +113,8 @@ const bindMountingList = ({ctx, key, anchor}) => {
 		node: defineArr([], {ctx, key, anchor}),
 		anchor
 	}
-	if (isFragment) {
-		DOM.append(ctx.safeZone, anchor)
-		mountingPointStore.set(anchor, children[key])
-	}
+	mountingPointStore.set(anchor, children[key])
+	if (isFragment) DOM.append(ctx.safeZone, anchor)
 }
 
 // Walk through the AST to perform proper actions
@@ -167,7 +163,7 @@ const create = ({node, ctx, innerData, refs, handlers, subscribers, svg}) => {
 	if (!fragment && !svg && !custom && info.t.toLowerCase() === 'svg') svg = true
 	// First create an element according to the description
 	const element = createElement({info, ctx, innerData, refs, handlers, subscribers, svg, fragment, custom})
-	if (fragment && process.env.NODE_ENV !== 'production') element.push(DOM.document.createComment('EF FRAGMENT START'))
+	if (fragment && process.env.NODE_ENV !== 'production') element.$children.push(DOM.document.createComment('EF FRAGMENT START'))
 
 	// Leave SVG mode if tag is `foreignObject`
 	if (svg && info.t.toLowerCase() === 'foreignobject') svg = false
@@ -177,7 +173,7 @@ const create = ({node, ctx, innerData, refs, handlers, subscribers, svg}) => {
 		if (node instanceof shared.EFBaseComponent) node.$mount({target: element})
 		else resolveAST({node, nodeType: typeOf(node), element, ctx, innerData, refs, handlers, subscribers, svg, create})
 	}
-	if (fragment && process.env.NODE_ENV !== 'production') element.push(DOM.document.createComment('EF FRAGMENT END'))
+	if (fragment && process.env.NODE_ENV !== 'production') element.$children.push(DOM.document.createComment('EF FRAGMENT END'))
 
 	return element
 }

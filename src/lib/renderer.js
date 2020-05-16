@@ -226,7 +226,7 @@ const EFBaseComponent = class {
 					} else parent[key] = nullComponent
 				}
 			// Else Remove elements from fragment parent
-			} else if (isInstance(parent, EFFragment)) ARR.remove(parent.$ctx.nodeInfo.element, nodeInfo.element)
+			} else if (isInstance(parent, EFFragment)) ARR.remove(parent.$ctx.nodeInfo.element.$children, nodeInfo.element)
 		}
 		DOM.append(safeZone, nodeInfo.placeholder)
 		queueDom(mount)
@@ -332,10 +332,10 @@ const EFBaseComponent = class {
 	 */
 	$destroy() {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
-		const { nodeInfo, isFragment, children } = this.$ctx
+		const { nodeInfo, children } = this.$ctx
 		inform()
 		this.$umount()
-		if (isFragment) for (let i in children) mountingPointStore.delete(children[i].anchor)
+		for (let i in children) mountingPointStore.delete(children[i].anchor)
 		// Detatch all mounted components
 		for (let i in this) {
 			if (typeOf(this[i]) === 'array') this[i].clear()
@@ -375,9 +375,12 @@ const EFNodeWrapper = class extends EFBaseComponent {
 	 */
 	constructor(...nodes) {
 		super(fragmentAST)
-		// Use parens to bypass ESLint's semicolon check
-		// Semi is needed for preventing Buble's bug
-		;(this).$ctx.nodeInfo.element.push(...nodes)
+
+		const childrenArr = this.$ctx.nodeInfo.element.$children
+		childrenArr.push(...nodes)
+
+		if (process.env.NODE_ENV !== 'production') childrenArr.push(ARR.remove(childrenArr, childrenArr[1]))
+
 		this.$ctx.elements = nodes
 	}
 
