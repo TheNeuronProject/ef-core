@@ -194,7 +194,7 @@ const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) 
 	if (fragment && process.env.NODE_ENV !== 'production') element.append(DOM.document.createComment('EF FRAGMENT START'))
 
 	// Leave SVG mode if tag is `foreignObject`
-	if (namespace && namespace === svgNS && t.toLowerCase() === 'foreignobject') namespace = ''
+	if (namespace && namespace === svgNS && ['foreignobject', 'desc', 'title'].indexOf(t.toLowerCase())) namespace = ''
 
 	// Append child nodes
 	for (let node of childNodes) {
