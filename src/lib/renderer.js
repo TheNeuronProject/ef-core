@@ -117,7 +117,7 @@ const EFBaseComponent = class {
 
 		inform()
 
-		nodeInfo.element = create({node: ast, ctx, innerData, refs, handlers, subscribers, svg: false})
+		nodeInfo.element = create({node: ast, ctx, innerData, refs, handlers, subscribers, namespace: ''})
 		DOM.append(safeZone, nodeInfo.placeholder)
 		queueDom(mount)
 		exec()

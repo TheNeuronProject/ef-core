@@ -9,6 +9,7 @@ import dbg from './lib/utils/debug.js'
 import typeOf from './lib/utils/type-of.js'
 import scoped from './lib/utils/scoped-component.js'
 import {setDOMImpl} from './lib/utils/dom-helper.js'
+import {getNamespace, declareNamespace} from './lib/utils/namespaces.js'
 import {version} from '../package.json'
 
 // Apply mounting point properties for classes
@@ -101,6 +102,8 @@ export {
 	isPaused,
 	mountOptions,
 	setDOMImpl,
+	getNamespace,
+	declareNamespace,
 	version
 }
 

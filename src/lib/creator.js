@@ -1,6 +1,7 @@
-import createElement from './element-creator.js'
+import {createElement, typeValid} from './element-creator.js'
 import {queue, inform, exec} from './render-queue.js'
 import {DOM, mountingPointStore} from './utils/dom-helper.js'
+import {getNamespace} from './utils/namespaces.js'
 import defineArr from './utils/dom-arr-helper.js'
 import ARR from './utils/array-helper.js'
 import typeOf from './utils/type-of.js'
@@ -8,6 +9,9 @@ import initBinding from './binding.js'
 import mountOptions from '../mount-options.js'
 
 import shared from './utils/global-shared.js'
+
+const svgNS = getNamespace('svg')
+const mathNS = getNamespace('math')
 
 const nullComponent = Object.create(null)
 
@@ -118,7 +122,7 @@ const bindMountingList = ({ctx, key, anchor}) => {
 }
 
 // Walk through the AST to perform proper actions
-const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, subscribers, svg, create}) => {
+const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, subscribers, namespace, create}) => {
 	if (node instanceof DOM.Node) {
 		DOM.append(element, node)
 		return
@@ -132,7 +136,7 @@ const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, su
 		// Child element or a dynamic text node
 		case 'array': {
 			// Recursive call for child element
-			if (typeOf(node[0]) === 'object') DOM.append(element, create({node, ctx, innerData, refs, handlers, subscribers, svg}))
+			if (typeOf(node[0]) === 'object') DOM.append(element, create({node, ctx, innerData, refs, handlers, subscribers, namespace}))
 			// Dynamic text node
 			else bindTextNode({node, ctx, handlers, subscribers, innerData, element})
 			break
@@ -155,23 +159,47 @@ const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, su
 }
 
 // Create elements based on description from AST
-const create = ({node, ctx, innerData, refs, handlers, subscribers, svg}) => {
+const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) => {
 	const [info, ...childNodes] = node
-	const fragment = info.t === 0
-	const custom = Object.isPrototypeOf.call(shared.EFBaseComponent, ctx.scope[info.t] || info.t)
-	// Enter SVG mode
-	if (!fragment && !svg && !custom && info.t.toLowerCase() === 'svg') svg = true
+	let {t, a, p, e, r} = info
+	const fragment = t === 0
+	const custom = Object.isPrototypeOf.call(shared.EFBaseComponent, ctx.scope[t] || t)
+
+	// Check if element needs a namespace
+	if (!fragment && !custom) {
+		if (t.indexOf(':') > -1) {
+			const [perfix, tagName] = t.split(':')
+			namespace = getNamespace(perfix)
+			t = tagName
+		} else if (a && a.xmlns && typeValid(a.xmlns)) {
+			namespace = a.xmlns
+		} else if (!namespace) {
+			const tagName = t.toLowerCase()
+			switch (tagName) {
+				case 'svg': {
+					namespace = svgNS
+					break
+				}
+				case 'math': {
+					namespace = mathNS
+					break
+				}
+				default:
+			}
+		}
+	}
+
 	// First create an element according to the description
-	const element = createElement({info, ctx, innerData, refs, handlers, subscribers, svg, fragment, custom})
+	const element = createElement({info: {t, a, p, e, r}, ctx, innerData, refs, handlers, subscribers, namespace, fragment, custom})
 	if (fragment && process.env.NODE_ENV !== 'production') element.append(DOM.document.createComment('EF FRAGMENT START'))
 
 	// Leave SVG mode if tag is `foreignObject`
-	if (svg && info.t.toLowerCase() === 'foreignobject') svg = false
+	if (namespace && namespace === svgNS && t.toLowerCase() === 'foreignobject') namespace = ''
 
 	// Append child nodes
 	for (let node of childNodes) {
 		if (node instanceof shared.EFBaseComponent) node.$mount({target: element})
-		else resolveAST({node, nodeType: typeOf(node), element, ctx, innerData, refs, handlers, subscribers, svg, create})
+		else resolveAST({node, nodeType: typeOf(node), element, ctx, innerData, refs, handlers, subscribers, namespace, create})
 	}
 	if (fragment && process.env.NODE_ENV !== 'production') element.append(DOM.document.createComment('EF FRAGMENT END'))
 
