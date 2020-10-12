@@ -260,6 +260,8 @@ state2.$methods.sendMsg = function (info) {
 state.$mount({target: document.body})
 state5.$mount({target: document.body})
 
+ef.declareNamespace('aaa', 'test')
+
 var customBtn = class extends HTMLButtonElement {
 	constructor(...args) {
 		super(...args)
@@ -270,7 +272,7 @@ customElements.define('my-btn', customBtn, {extends: 'button'})
 var state6 = new module4(null, {h1: customBtn})
 state6.$mount({target: document.body})
 
-var state7 = new module4(null, {h1: {tag: 'button', is: 'my-btn'}})
+var state7 = new module4(null, {h1: {tag: 'aaa:button', is: 'my-btn'}})
 state7.$mount({target: document.body})
 
 var state8 = new module5

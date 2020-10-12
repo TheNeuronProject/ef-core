@@ -1,6 +1,7 @@
-import createElement from './element-creator.js'
+import {createElement, typeValid} from './element-creator.js'
 import {queue, inform, exec} from './render-queue.js'
 import {DOM, mountingPointStore} from './utils/dom-helper.js'
+import {getNamespace} from './utils/namespaces.js'
 import defineArr from './utils/dom-arr-helper.js'
 import ARR from './utils/array-helper.js'
 import typeOf from './utils/type-of.js'
@@ -8,6 +9,10 @@ import initBinding from './binding.js'
 import mountOptions from '../mount-options.js'
 
 import shared from './utils/global-shared.js'
+
+const svgNS = getNamespace('svg')
+const mathNS = getNamespace('math')
+const htmlNS = getNamespace('html')
 
 const nullComponent = Object.create(null)
 
@@ -118,7 +123,7 @@ const bindMountingList = ({ctx, key, anchor}) => {
 }
 
 // Walk through the AST to perform proper actions
-const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, subscribers, svg, create}) => {
+const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, subscribers, namespace, create}) => {
 	if (node instanceof DOM.Node) {
 		DOM.append(element, node)
 		return
@@ -132,7 +137,7 @@ const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, su
 		// Child element or a dynamic text node
 		case 'array': {
 			// Recursive call for child element
-			if (typeOf(node[0]) === 'object') DOM.append(element, create({node, ctx, innerData, refs, handlers, subscribers, svg}))
+			if (typeOf(node[0]) === 'object') DOM.append(element, create({node, ctx, innerData, refs, handlers, subscribers, namespace}))
 			// Dynamic text node
 			else bindTextNode({node, ctx, handlers, subscribers, innerData, element})
 			break
@@ -155,23 +160,68 @@ const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, su
 }
 
 // Create elements based on description from AST
-const create = ({node, ctx, innerData, refs, handlers, subscribers, svg}) => {
+/* eslint {"complexity": "off"} */
+const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) => {
 	const [info, ...childNodes] = node
 	const fragment = info.t === 0
 	const custom = Object.isPrototypeOf.call(shared.EFBaseComponent, ctx.scope[info.t] || info.t)
-	// Enter SVG mode
-	if (!fragment && !svg && !custom && info.t.toLowerCase() === 'svg') svg = true
+
+	let localNamespace = false
+	const previousNamespace = namespace
+
+	// Check if element needs a namespace
+	if (!fragment && !custom) {
+		if (ctx.scope[info.t] && ctx.scope[info.t].namespaceURI) namespace = ctx.scope[info.t].namespaceURI
+		else {
+			let tagName = info.t
+			if (ctx.scope[info.t]) {
+				const scoped = ctx.scope[info.t]
+				if (typeof scoped === 'string') tagName = scoped
+				else if (scoped.tag) tagName = scoped.tag
+			}
+			if (tagName.indexOf(':') > -1) {
+				const [perfix] = tagName.split(':')
+				if (ctx.state.constructor.__local_namespaces[perfix]) {
+					namespace = ctx.state.constructor.__local_namespaces[perfix]
+					localNamespace = true
+				} else {
+					namespace = getNamespace(perfix)
+				}
+			} else if (info.a && info.a.xmlns && typeValid(info.a.xmlns)) {
+				namespace = info.a.xmlns
+			} else if (!namespace) {
+				tagName = tagName.toLowerCase()
+				switch (tagName) {
+					case 'svg': {
+						namespace = svgNS
+						break
+					}
+					case 'math': {
+						namespace = mathNS
+						break
+					}
+					default:
+				}
+			}
+		}
+	}
+
+	if (namespace === htmlNS) namespace = ''
+
 	// First create an element according to the description
-	const element = createElement({info, ctx, innerData, refs, handlers, subscribers, svg, fragment, custom})
+	const element = createElement({info, ctx, innerData, refs, handlers, subscribers, namespace, fragment, custom})
 	if (fragment && process.env.NODE_ENV !== 'production') element.append(DOM.document.createComment('EF FRAGMENT START'))
 
 	// Leave SVG mode if tag is `foreignObject`
-	if (svg && info.t.toLowerCase() === 'foreignobject') svg = false
+	if (namespace && namespace === svgNS && ['foreignobject', 'desc', 'title'].indexOf(info.t.toLowerCase())) namespace = ''
+
+	// restore previous namespace if namespace is defined locally
+	if (localNamespace) namespace = previousNamespace
 
 	// Append child nodes
 	for (let node of childNodes) {
 		if (node instanceof shared.EFBaseComponent) node.$mount({target: element})
-		else resolveAST({node, nodeType: typeOf(node), element, ctx, innerData, refs, handlers, subscribers, svg, create})
+		else resolveAST({node, nodeType: typeOf(node), element, ctx, innerData, refs, handlers, subscribers, namespace, create})
 	}
 	if (fragment && process.env.NODE_ENV !== 'production') element.append(DOM.document.createComment('EF FRAGMENT END'))
 
