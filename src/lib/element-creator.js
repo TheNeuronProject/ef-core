@@ -5,37 +5,43 @@ import ARR from './utils/array-helper.js'
 import {DOM, EFFragment} from './utils/dom-helper.js'
 import getEvent from './utils/event-helper.js'
 import {mixVal} from './utils/literals-mix.js'
+import {getNamespace} from './utils/namespaces.js'
 import dbg from './utils/debug.js'
 
 const typeValid = obj => ['number', 'boolean', 'string'].indexOf(typeof obj) > -1
 
-// SVG/MathML tags w/ xlink attributes require specific namespace to work properly
-const svgNS = 'http://www.w3.org/2000/svg'
-const mathNS = 'http://www.w3.org/1998/Math/MathML'
-const xlinkNS = 'http://www.w3.org/1999/xlink'
-const createByTag = ({tagName, tagContent, attrs, svg}) => {
+const createByTag = ({tagName, tagContent, attrs, namespace}) => {
 	const tagType = typeof tagContent
 
-	if (tagType === 'string') {
-		// Then SVG
-		if (svg) return DOM.document.createElementNS(svgNS, tagContent)
-		// Then MathML
-		if (tagContent.toLowerCase() === 'math') return DOM.document.createElementNS(mathNS, tagContent)
-		// Then custom basic elements
-		if (tagName === tagContent && attrs && attrs.is && typeof attrs.is === 'string') return DOM.document.createElement(tagContent, {is: attrs.is})
-		// Then basic HTMLElements
-		return DOM.document.createElement(tagContent)
+	switch (tagType) {
+		case 'string': {
+			const creationOption = {}
+			if (tagName === tagContent && attrs && attrs.is && typeof attrs.is === 'string') creationOption.is = attrs.is
+			// if (tagContent.indexOf(':') > -1) [, tagContent] = tagContent.split(':')
+			// Namespaced
+			if (namespace) return DOM.document.createElementNS(namespace, tagContent, creationOption)
+			// Then basic HTMLElements
+			return DOM.document.createElement(tagContent, creationOption)
+		}
+		case 'function': {
+			// Then custom component or class based custom component
+			return new tagContent()
+		}
+		default: {
+			// Then overriden basic element
+			if (tagContent.tag) tagName = tagContent.tag
+			// if (tagName.indexOf(':') > -1) [, tagName] = tagName.split(':')
+			if (namespace) {
+				return DOM.document.createElementNS(namespace, tagName, {is: tagContent.is})
+			}
+
+			return DOM.document.createElement(tagName, {is: tagContent.is})
+		}
 	}
-
-	// Then custom component or class based custom component
-	if (tagType === 'function') return new tagContent()
-
-	// Then overriden basic element
-	return DOM.document.createElement(tagContent.tag || tagName, {is: tagContent.is})
 }
 
-const getElement = ({tagName, tagContent, attrs, ref, refs, svg}) => {
-	const element = createByTag({tagName, tagContent, attrs, svg})
+const getElement = ({tagName, tagContent, attrs, ref, refs, namespace}) => {
+	const element = createByTag({tagName, tagContent, attrs, namespace})
 	if (ref) Object.defineProperty(refs, ref, {
 		value: element,
 		enumerable: true
@@ -125,11 +131,15 @@ const getAttrHandler = (element, key, custom) => {
 		element.setAttribute(key, val)
 	}
 
-	// Handle xlink namespace
-	if (key.indexOf('xlink:') === 0) return (val) => {
-		// Remove attribute when value is empty
-		if (val === '') return element.removeAttributeNS(xlinkNS, key)
-		element.setAttributeNS(xlinkNS, key, val)
+	// Handle namespace
+	if (key.indexOf(':') > -1) {
+		const [perfix] = key.split(':')
+		const namespace = getNamespace(perfix)
+		return (val) => {
+			// Remove attribute when value is empty
+			if (val === '') return element.removeAttributeNS(namespace, key)
+			element.setAttributeNS(getNamespace('xlink'), key, val)
+		}
 	}
 
 	return (val) => {
@@ -146,8 +156,13 @@ const addAttr = ({element, attr, key, ctx, handlers, subscribers, innerData, cus
 			else element[key] = attr
 			return
 		}
-		// Handle xlink namespace
-		if (key.indexOf('xlink:') === 0) return element.setAttributeNS(xlinkNS, key, attr)
+		// Do not set or `is` again
+		if (key === 'is') return
+		// Handle namespaces
+		if (key.indexOf(':') > -1) {
+			const [perfix] = key.split(':')
+			if (perfix !== 'xmlns') return element.setAttributeNS(getNamespace(perfix), key, attr)
+		}
 		return element.setAttribute(key, attr)
 	}
 
@@ -210,7 +225,7 @@ const addEvent = ({element, event, ctx, handlers, subscribers, innerData, custom
 	}, !!u)
 }
 
-const createElement = ({info, ctx, innerData, refs, handlers, subscribers, svg, fragment, custom}) => {
+const createElement = ({info, ctx, innerData, refs, handlers, subscribers, namespace, fragment, custom}) => {
 	if (fragment) return new EFFragment()
 
 	/*
@@ -223,7 +238,7 @@ const createElement = ({info, ctx, innerData, refs, handlers, subscribers, svg, 
 	const {t, a, p, e, r} = info
 	const tagName = t
 	const tagContent = ctx.scope[t] || t
-	const element = getElement({tagName, tagContent, attrs: a, ref: r, refs, svg})
+	const element = getElement({tagName, tagContent, attrs: a, ref: r, refs, namespace})
 	if (a) for (let key in a) addAttr({element, custom, attr: a[key], key, ctx, handlers, subscribers, innerData})
 	if (p) for (let [propPath, value] of p) addProp({element, custom, value, propPath, ctx, handlers, subscribers, innerData})
 	if (e) for (let event of e) addEvent({element, custom, event, ctx, handlers, subscribers, innerData})
@@ -231,4 +246,4 @@ const createElement = ({info, ctx, innerData, refs, handlers, subscribers, svg, 
 	return element
 }
 
-export default createElement
+export {createElement, typeValid}

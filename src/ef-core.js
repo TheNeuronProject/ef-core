@@ -9,20 +9,33 @@ import dbg from './lib/utils/debug.js'
 import typeOf from './lib/utils/type-of.js'
 import scoped from './lib/utils/scoped-component.js'
 import {setDOMImpl} from './lib/utils/dom-helper.js'
+import {declareNamespace} from './lib/utils/namespaces.js'
 import {version} from '../package.json'
 
-// Apply mounting point properties for classes
-const applyMountingPoints = (node, tpl) => {
+const registerNS = (attrs, component) => {
+	for (let i in attrs) {
+		if (i.indexOf('xmlns:') === 0) {
+			const [, perfix] = i.split(':')
+			component.__local_namespaces[perfix] = attrs[i]
+		}
+	}
+}
+
+// Iintialize components
+const initComponent = (node, component) => {
 	const nodeType = typeOf(node)
 	switch (nodeType) {
 		case 'array': {
 			const [info, ...childNodes] = node
-			if (typeOf(info) === 'object') for (let i of childNodes) applyMountingPoints(i, tpl)
+			if (typeOf(info) === 'object') {
+				if (info.a) registerNS(info.a, component)
+				for (let i of childNodes) initComponent(i, component)
+			}
 			break
 		}
 		case 'object': {
 			if (node.t > 1) throw new TypeError(`[EF] Not a standard ef.js AST: Unknown mounting point type '${node.t}'`)
-			applyMountingPoint(node.t, node.n, tpl)
+			applyMountingPoint(node.t, node.n, component)
 			break
 		}
 		case 'string': {
@@ -77,11 +90,13 @@ const create = (ast) => {
 			exec()
 		}
 	}
-	applyMountingPoints(ast, EFComponent)
 
 	// Workaround for a bug of buble
 	// https://github.com/bublejs/buble/issues/197
 	Object.defineProperty(EFComponent.prototype, 'constructor', {enumerable: false})
+
+	Object.defineProperty(EFComponent, '__local_namespaces', {enumerable: false, value: {}})
+	initComponent(ast, EFComponent)
 	return EFComponent
 }
 
@@ -101,6 +116,7 @@ export {
 	isPaused,
 	mountOptions,
 	setDOMImpl,
+	declareNamespace,
 	version
 }
 
