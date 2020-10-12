@@ -12,6 +12,7 @@ import shared from './utils/global-shared.js'
 
 const svgNS = getNamespace('svg')
 const mathNS = getNamespace('math')
+const htmlNS = getNamespace('html')
 
 const nullComponent = Object.create(null)
 
@@ -165,6 +166,9 @@ const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) 
 	const fragment = info.t === 0
 	const custom = Object.isPrototypeOf.call(shared.EFBaseComponent, ctx.scope[info.t] || info.t)
 
+	let localNamespace = false
+	const previousNamespace = namespace
+
 	// Check if element needs a namespace
 	if (!fragment && !custom) {
 		if (ctx.scope[info.t] && ctx.scope[info.t].namespaceURI) namespace = ctx.scope[info.t].namespaceURI
@@ -176,12 +180,17 @@ const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) 
 				else if (scoped.tag) tagName = scoped.tag
 			}
 			if (tagName.indexOf(':') > -1) {
-				const [perfix] = info.t.split(':')
-				namespace = getNamespace(perfix)
+				const [perfix] = tagName.split(':')
+				if (ctx.state.constructor.__local_namespaces[perfix]) {
+					namespace = ctx.state.constructor.__local_namespaces[perfix]
+					localNamespace = true
+				} else {
+					namespace = getNamespace(perfix)
+				}
 			} else if (info.a && info.a.xmlns && typeValid(info.a.xmlns)) {
 				namespace = info.a.xmlns
 			} else if (!namespace) {
-				const tagName = info.t.toLowerCase()
+				tagName = tagName.toLowerCase()
 				switch (tagName) {
 					case 'svg': {
 						namespace = svgNS
@@ -197,12 +206,17 @@ const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) 
 		}
 	}
 
+	if (namespace === htmlNS) namespace = ''
+
 	// First create an element according to the description
 	const element = createElement({info, ctx, innerData, refs, handlers, subscribers, namespace, fragment, custom})
 	if (fragment && process.env.NODE_ENV !== 'production') element.append(DOM.document.createComment('EF FRAGMENT START'))
 
 	// Leave SVG mode if tag is `foreignObject`
 	if (namespace && namespace === svgNS && ['foreignobject', 'desc', 'title'].indexOf(info.t.toLowerCase())) namespace = ''
+
+	// restore previous namespace if namespace is defined locally
+	if (localNamespace) namespace = previousNamespace
 
 	// Append child nodes
 	for (let node of childNodes) {
