@@ -17,6 +17,7 @@ const createByTag = ({tagName, tagContent, attrs, namespace}) => {
 		case 'string': {
 			const creationOption = {}
 			if (tagName === tagContent && attrs && attrs.is && typeof attrs.is === 'string') creationOption.is = attrs.is
+			// if (tagContent.indexOf(':') > -1) [, tagContent] = tagContent.split(':')
 			// Namespaced
 			if (namespace) return DOM.document.createElementNS(namespace, tagContent, creationOption)
 			// Then basic HTMLElements
@@ -28,11 +29,13 @@ const createByTag = ({tagName, tagContent, attrs, namespace}) => {
 		}
 		default: {
 			// Then overriden basic element
+			if (tagContent.tag) tagName = tagContent.tag
+			// if (tagName.indexOf(':') > -1) [, tagName] = tagName.split(':')
 			if (namespace) {
-				return DOM.document.createElementNS(namespace, tagContent.tag || tagName, {is: tagContent.is})
+				return DOM.document.createElementNS(namespace, tagName, {is: tagContent.is})
 			}
 
-			return DOM.document.createElement(tagContent.tag || tagName, {is: tagContent.is})
+			return DOM.document.createElement(tagName, {is: tagContent.is})
 		}
 	}
 }
@@ -153,12 +156,12 @@ const addAttr = ({element, attr, key, ctx, handlers, subscribers, innerData, cus
 			else element[key] = attr
 			return
 		}
-		// Do not set `xmlns` or `is` again
-		if (['xmlns', 'is'].indexOf(key) > -1) return
+		// Do not set or `is` again
+		if (key === 'is') return
 		// Handle namespaces
 		if (key.indexOf(':') > -1) {
-			const [perfix] = key.split[':']
-			return element.setAttributeNS(getNamespace(perfix), key, attr)
+			const [perfix] = key.split(':')
+			if (perfix !== 'xmlns') return element.setAttributeNS(getNamespace(perfix), key, attr)
 		}
 		return element.setAttribute(key, attr)
 	}

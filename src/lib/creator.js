@@ -159,42 +159,50 @@ const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, su
 }
 
 // Create elements based on description from AST
+/* eslint {"complexity": "off"} */
 const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) => {
 	const [info, ...childNodes] = node
-	let {t, a, p, e, r} = info
-	const fragment = t === 0
-	const custom = Object.isPrototypeOf.call(shared.EFBaseComponent, ctx.scope[t] || t)
+	const fragment = info.t === 0
+	const custom = Object.isPrototypeOf.call(shared.EFBaseComponent, ctx.scope[info.t] || info.t)
 
 	// Check if element needs a namespace
 	if (!fragment && !custom) {
-		if (t.indexOf(':') > -1) {
-			const [perfix, tagName] = t.split(':')
-			namespace = getNamespace(perfix)
-			t = tagName
-		} else if (a && a.xmlns && typeValid(a.xmlns)) {
-			namespace = a.xmlns
-		} else if (!namespace) {
-			const tagName = t.toLowerCase()
-			switch (tagName) {
-				case 'svg': {
-					namespace = svgNS
-					break
+		if (ctx.scope[info.t] && ctx.scope[info.t].namespaceURI) namespace = ctx.scope[info.t].namespaceURI
+		else {
+			let tagName = info.t
+			if (ctx.scope[info.t]) {
+				const scoped = ctx.scope[info.t]
+				if (typeof scoped === 'string') tagName = scoped
+				else if (scoped.tag) tagName = scoped.tag
+			}
+			if (tagName.indexOf(':') > -1) {
+				const [perfix] = info.t.split(':')
+				namespace = getNamespace(perfix)
+			} else if (info.a && info.a.xmlns && typeValid(info.a.xmlns)) {
+				namespace = info.a.xmlns
+			} else if (!namespace) {
+				const tagName = info.t.toLowerCase()
+				switch (tagName) {
+					case 'svg': {
+						namespace = svgNS
+						break
+					}
+					case 'math': {
+						namespace = mathNS
+						break
+					}
+					default:
 				}
-				case 'math': {
-					namespace = mathNS
-					break
-				}
-				default:
 			}
 		}
 	}
 
 	// First create an element according to the description
-	const element = createElement({info: {t, a, p, e, r}, ctx, innerData, refs, handlers, subscribers, namespace, fragment, custom})
+	const element = createElement({info, ctx, innerData, refs, handlers, subscribers, namespace, fragment, custom})
 	if (fragment && process.env.NODE_ENV !== 'production') element.append(DOM.document.createComment('EF FRAGMENT START'))
 
 	// Leave SVG mode if tag is `foreignObject`
-	if (namespace && namespace === svgNS && ['foreignobject', 'desc', 'title'].indexOf(t.toLowerCase())) namespace = ''
+	if (namespace && namespace === svgNS && ['foreignobject', 'desc', 'title'].indexOf(info.t.toLowerCase())) namespace = ''
 
 	// Append child nodes
 	for (let node of childNodes) {
