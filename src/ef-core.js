@@ -15,8 +15,8 @@ import {version} from '../package.json'
 const registerNS = (attrs, component) => {
 	for (let i in attrs) {
 		if (i.indexOf('xmlns:') === 0) {
-			const [, perfix] = i.split(':')
-			component.__local_namespaces[perfix] = attrs[i]
+			const [, prefix] = i.split(':')
+			component.__local_namespaces[prefix] = attrs[i]
 		}
 	}
 }

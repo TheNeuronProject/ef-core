@@ -1,4 +1,4 @@
-// Wrap console functions for `[EF]` perfix
+// Wrap console functions for `[EF]` prefix
 const strTpl = '[EF] %s'
 const dbg = {
 	log: console.log.bind(console, strTpl),
