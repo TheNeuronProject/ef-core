@@ -166,7 +166,7 @@ const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) 
 	const fragment = info.t === 0
 	const custom = Object.isPrototypeOf.call(shared.EFBaseComponent, ctx.scope[info.t] || info.t)
 
-	let localNamespace = false
+	let isLocalNamespace = false
 	const previousNamespace = namespace
 
 	// Check if element needs a namespace
@@ -181,9 +181,9 @@ const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) 
 			}
 			if (tagName.indexOf(':') > -1) {
 				const [perfix] = tagName.split(':')
-				if (ctx.state.constructor.__local_namespaces[perfix]) {
-					namespace = ctx.state.constructor.__local_namespaces[perfix]
-					localNamespace = true
+				if (ctx.localNamespaces[perfix]) {
+					namespace = ctx.localNamespaces[perfix]
+					isLocalNamespace = true
 				} else {
 					namespace = getNamespace(perfix)
 				}
@@ -216,7 +216,7 @@ const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) 
 	if (namespace && namespace === svgNS && ['foreignobject', 'desc', 'title'].indexOf(info.t.toLowerCase())) namespace = ''
 
 	// restore previous namespace if namespace is defined locally
-	if (localNamespace) namespace = previousNamespace
+	if (isLocalNamespace) namespace = previousNamespace
 
 	// Append child nodes
 	for (let node of childNodes) {

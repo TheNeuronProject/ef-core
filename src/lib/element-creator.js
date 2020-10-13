@@ -117,7 +117,7 @@ const addValListener = ({ctx, handlers, subscribers, innerData, element, key, ex
 	}
 }
 
-const getAttrHandler = (element, key, custom) => {
+const getAttrHandler = ({element, key, custom, ctx}) => {
 	// Pass directly to custom component
 	if (custom) return (val) => {
 		element[key] = val
@@ -134,11 +134,11 @@ const getAttrHandler = (element, key, custom) => {
 	// Handle namespace
 	if (key.indexOf(':') > -1) {
 		const [perfix] = key.split(':')
-		const namespace = getNamespace(perfix)
+		const namespace = ctx.localNamespaces[perfix] || getNamespace(perfix)
 		return (val) => {
 			// Remove attribute when value is empty
 			if (val === '') return element.removeAttributeNS(namespace, key)
-			element.setAttributeNS(getNamespace('xlink'), key, val)
+			element.setAttributeNS(namespace, key, val)
 		}
 	}
 
@@ -161,12 +161,12 @@ const addAttr = ({element, attr, key, ctx, handlers, subscribers, innerData, cus
 		// Handle namespaces
 		if (key.indexOf(':') > -1) {
 			const [perfix] = key.split(':')
-			if (perfix !== 'xmlns') return element.setAttributeNS(getNamespace(perfix), key, attr)
+			if (perfix !== 'xmlns') return element.setAttributeNS(ctx.localNamespaces[perfix] || getNamespace(perfix), key, attr)
 		}
 		return element.setAttribute(key, attr)
 	}
 
-	const handler = getAttrHandler(element, key, custom)
+	const handler = getAttrHandler({element, key, custom, ctx})
 	queue([regTmpl({val: attr, ctx, handlers, subscribers, innerData, handler})])
 }
 
