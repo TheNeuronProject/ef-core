@@ -106,7 +106,8 @@ const EFBaseComponent = class {
 		const ctx = {
 			scope, mount, refs, data, innerData, methods,
 			handlers, subscribers, nodeInfo, safeZone,
-			children, state: this, isFragment: ast[0].t === 0
+			children, state: this, isFragment: ast[0].t === 0,
+			localNamespaces: this.constructor.__local_namespaces
 		}
 
 		Object.defineProperty(this, '$ctx', {
