@@ -180,12 +180,12 @@ const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) 
 				else if (scoped.tag) tagName = scoped.tag
 			}
 			if (tagName.indexOf(':') > -1) {
-				const [perfix] = tagName.split(':')
-				if (ctx.localNamespaces[perfix]) {
-					namespace = ctx.localNamespaces[perfix]
+				const [prefix] = tagName.split(':')
+				if (ctx.localNamespaces[prefix]) {
+					namespace = ctx.localNamespaces[prefix]
 					isLocalNamespace = true
 				} else {
-					namespace = getNamespace(perfix)
+					namespace = getNamespace(prefix)
 				}
 			} else if (info.a && info.a.xmlns && typeValid(info.a.xmlns)) {
 				namespace = info.a.xmlns

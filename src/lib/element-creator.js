@@ -133,8 +133,8 @@ const getAttrHandler = ({element, key, custom, ctx}) => {
 
 	// Handle namespace
 	if (key.indexOf(':') > -1) {
-		const [perfix] = key.split(':')
-		const namespace = ctx.localNamespaces[perfix] || getNamespace(perfix)
+		const [prefix] = key.split(':')
+		const namespace = ctx.localNamespaces[prefix] || getNamespace(prefix)
 		return (val) => {
 			// Remove attribute when value is empty
 			if (val === '') return element.removeAttributeNS(namespace, key)
@@ -160,8 +160,8 @@ const addAttr = ({element, attr, key, ctx, handlers, subscribers, innerData, cus
 		if (key === 'is') return
 		// Handle namespaces
 		if (key.indexOf(':') > -1) {
-			const [perfix] = key.split(':')
-			if (perfix !== 'xmlns') return element.setAttributeNS(ctx.localNamespaces[perfix] || getNamespace(perfix), key, attr)
+			const [prefix] = key.split(':')
+			if (prefix !== 'xmlns') return element.setAttributeNS(ctx.localNamespaces[prefix] || getNamespace(prefix), key, attr)
 		}
 		return element.setAttribute(key, attr)
 	}
