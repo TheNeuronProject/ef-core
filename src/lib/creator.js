@@ -182,13 +182,14 @@ const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) 
 			}
 		}
 		if (tagName.indexOf(':') > -1) {
-			const [prefix] = tagName.split(':')
+			const [prefix, unprefixedTagName] = tagName.split(':')
 			if (ctx.localNamespaces[prefix]) {
 				namespace = ctx.localNamespaces[prefix]
 				isLocalPrefix = true
 			} else {
 				namespace = getNamespace(prefix)
 			}
+			tagName = unprefixedTagName
 		} else if (info.a && info.a.xmlns && typeValid(info.a.xmlns)) {
 			namespace = info.a.xmlns
 		} else if (!namespace) {
@@ -214,7 +215,7 @@ const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) 
 	if (fragment && process.env.NODE_ENV !== 'production') element.append(DOM.document.createComment('EF FRAGMENT START'))
 
 	// Leave SVG mode if tag is `foreignObject`
-	if (namespace && namespace === svgNS && ['foreignobject', 'desc', 'title'].indexOf(tagName.toLowerCase())) namespace = ''
+	if (namespace && namespace === svgNS && ['foreignobject', 'desc', 'title'].indexOf(tagName.toLowerCase()) > -1) namespace = ''
 
 	// restore previous namespace if namespace is defined locally
 	if (isLocalPrefix) namespace = previousNamespace
