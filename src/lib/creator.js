@@ -163,45 +163,46 @@ const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, su
 /* eslint {"complexity": "off"} */
 const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) => {
 	const [info, ...childNodes] = node
-	const fragment = info.t === 0
-	const custom = Object.isPrototypeOf.call(shared.EFBaseComponent, ctx.scope[info.t] || info.t)
-
-	let isLocalNamespace = false
 	const previousNamespace = namespace
+
+	let tagName = info.t
+	let isLocalPrefix = false
+
+	const fragment = tagName === 0
+	const custom = Object.isPrototypeOf.call(shared.EFBaseComponent, ctx.scope[tagName] || tagName)
 
 	// Check if element needs a namespace
 	if (!fragment && !custom) {
-		if (ctx.scope[info.t] && ctx.scope[info.t].namespaceURI) namespace = ctx.scope[info.t].namespaceURI
-		else {
-			let tagName = info.t
-			if (ctx.scope[info.t]) {
-				const scoped = ctx.scope[info.t]
-				if (typeof scoped === 'string') tagName = scoped
-				else if (scoped.tag) tagName = scoped.tag
+		if (ctx.scope[tagName]) {
+			const scoped = ctx.scope[tagName]
+			if (typeof scoped === 'string') tagName = scoped
+			else if (scoped.tag) {
+				tagName = scoped.tag
+				if (scoped.namespaceURI) namespace = scoped.namespaceURI
 			}
-			if (tagName.indexOf(':') > -1) {
-				const [prefix] = tagName.split(':')
-				if (ctx.localNamespaces[prefix]) {
-					namespace = ctx.localNamespaces[prefix]
-					isLocalNamespace = true
-				} else {
-					namespace = getNamespace(prefix)
+		}
+		if (tagName.indexOf(':') > -1) {
+			const [prefix] = tagName.split(':')
+			if (ctx.localNamespaces[prefix]) {
+				namespace = ctx.localNamespaces[prefix]
+				isLocalPrefix = true
+			} else {
+				namespace = getNamespace(prefix)
+			}
+		} else if (info.a && info.a.xmlns && typeValid(info.a.xmlns)) {
+			namespace = info.a.xmlns
+		} else if (!namespace) {
+			tagName = tagName.toLowerCase()
+			switch (tagName) {
+				case 'svg': {
+					namespace = svgNS
+					break
 				}
-			} else if (info.a && info.a.xmlns && typeValid(info.a.xmlns)) {
-				namespace = info.a.xmlns
-			} else if (!namespace) {
-				tagName = tagName.toLowerCase()
-				switch (tagName) {
-					case 'svg': {
-						namespace = svgNS
-						break
-					}
-					case 'math': {
-						namespace = mathNS
-						break
-					}
-					default:
+				case 'math': {
+					namespace = mathNS
+					break
 				}
+				default:
 			}
 		}
 	}
@@ -213,10 +214,10 @@ const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) 
 	if (fragment && process.env.NODE_ENV !== 'production') element.append(DOM.document.createComment('EF FRAGMENT START'))
 
 	// Leave SVG mode if tag is `foreignObject`
-	if (namespace && namespace === svgNS && ['foreignobject', 'desc', 'title'].indexOf(info.t.toLowerCase())) namespace = ''
+	if (namespace && namespace === svgNS && ['foreignobject', 'desc', 'title'].indexOf(tagName.toLowerCase())) namespace = ''
 
 	// restore previous namespace if namespace is defined locally
-	if (isLocalNamespace) namespace = previousNamespace
+	if (isLocalPrefix) namespace = previousNamespace
 
 	// Append child nodes
 	for (let node of childNodes) {
