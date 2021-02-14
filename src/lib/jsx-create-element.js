@@ -1,8 +1,9 @@
 import {EFBaseComponent, Fragment, toEFComponent} from './renderer.js'
+import ARR from './utils/array-helper.js'
 import {assign} from './utils/polyfills.js'
 
 const flatten = (prev, item) => {
-	if (Array.isArray(item)) prev.push(...item.map(toEFComponent))
+	if (ARR.isArray(item)) prev.push(...item.map(toEFComponent))
 	else prev.push(toEFComponent(item))
 
 	return prev

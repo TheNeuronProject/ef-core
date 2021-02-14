@@ -52,7 +52,7 @@ const handleMountingPoint = (element, tempFragment) => {
 
 	const {node} = mountingPoint
 	if (!node) return
-	if (Array.isArray(node)) {
+	if (ARR.isArray(node)) {
 		for (let i of node) appendNode(i, tempFragment)
 	} else appendNode(node, tempFragment)
 }
@@ -92,7 +92,7 @@ DOM.append = (node, ...nodes) => {
 	if (isInstance(node, EFFragment)) return node.append(...nodes)
 	// Handle EFComponent
 	if (node instanceof shared.EFBaseComponent) {
-		if (!(Array.isArray(node.children))) {
+		if (!(ARR.isArray(node.children))) {
 			if (process.env.NODE_ENV !== 'production') dbg.warn(node, 'has no `children` list mount point! Child nodes are all ignored!')
 			return
 		}
