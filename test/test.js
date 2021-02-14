@@ -73,6 +73,16 @@ var template = parseEft(
 '\n	>button' +
 '\n		@click = sendMsg:some data' +
 '\n		.{{btnText = sendMsg}}' +
+'\n	>br' +
+'\n	>input' +
+'\n		%value@keypress.13 = {{enterUpdateValue}}' +
+'\n	>span' +
+'\n		.Enter at the input box to update this value: {{enterUpdateValue}}' +
+'\n	>br' +
+'\n	>input' +
+'\n		%value@keypress.ctrl.13 = {{enterWithCtrlUpdateValue}}' +
+'\n	>span' +
+'\n		.Enter with ctrl pressed at the input box to update this value: {{enterWithCtrlUpdateValue}}' +
 '\n	+list' +
 '\n	+children')
 
