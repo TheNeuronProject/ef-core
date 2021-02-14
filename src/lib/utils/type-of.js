@@ -1,5 +1,7 @@
+import ARR from	'./array-helper.js'
+
 const typeOf = (obj) => {
-	if (Array.isArray(obj)) return 'array'
+	if (ARR.isArray(obj)) return 'array'
 	return typeof obj
 }
 

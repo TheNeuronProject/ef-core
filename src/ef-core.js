@@ -100,6 +100,12 @@ const create = (ast) => {
 	return EFComponent
 }
 
+let coreVersion = version
+
+if (process.env.NODE_ENV !== 'production') {
+	coreVersion = `${version}+debug`
+}
+
 export {
 	create,
 	mapAttrs,
@@ -117,7 +123,7 @@ export {
 	mountOptions,
 	setDOMImpl,
 	declareNamespace,
-	version
+	coreVersion as version
 }
 
-if (process.env.NODE_ENV !== 'production') dbg.info(`ef-core v${version} initialized!`)
+if (process.env.NODE_ENV !== 'production') dbg.info(`ef-core v${coreVersion} initialized!`)
