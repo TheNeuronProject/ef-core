@@ -1,4 +1,5 @@
-const proto = Array.prototype
+const SavedArray = Array
+const proto = SavedArray.prototype
 
 const ARR = {
 	copy(arr) {
@@ -9,7 +10,7 @@ const ARR = {
 		return arr
 	},
 	equals(left, right) {
-		if (!Array.isArray(right)) return false
+		if (!SavedArray.isArray(right)) return false
 		if (left === right) return true
 		if (left.length !== right.length) return false
 		for (let i = 0, l = left.length; i < l; i++) {
@@ -55,10 +56,13 @@ const ARR = {
 	},
 	unshift(arr, ...items) {
 		return proto.unshift.apply(arr, items)
+	},
+	isArray(arr) {
+		return SavedArray.isArray(arr)
 	}
 }
 
-if (typeof Set !== 'undefined' && Array.from) ARR.unique = arr => Array.from(new Set(arr))
+if (typeof Set !== 'undefined' && SavedArray.from) ARR.unique = arr => SavedArray.from(new Set(arr))
 else ARR.unique = ARR.rightUnique
 
 export default ARR

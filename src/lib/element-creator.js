@@ -50,7 +50,7 @@ const getElement = ({tagName, tagContent, attrs, ref, refs, namespace}) => {
 }
 
 const regTmpl = ({val, ctx, handlers, subscribers, innerData, handler}) => {
-	if (Array.isArray(val)) {
+	if (ARR.isArray(val)) {
 		const [strs, ...exprs] = val
 		const tmpl = [strs]
 
@@ -67,9 +67,8 @@ const regTmpl = ({val, ctx, handlers, subscribers, innerData, handler}) => {
 	return () => val
 }
 
-const addValListener = ({ctx, handlers, subscribers, innerData, element, key, expr, custom}) => {
+const addValListener = ({ctx, syncTrigger, handlers, subscribers, innerData, element, key, expr, custom}) => {
 	const addListener = custom && '$on' || 'addEventListener'
-	const dispatch = custom && '$dispatch' || 'dispatchEvent'
 	const {parentNode, _key} = initBinding({bind: expr, ctx, handlers, subscribers, innerData})
 	const _update = () => {
 		inform()
@@ -77,7 +76,34 @@ const addValListener = ({ctx, handlers, subscribers, innerData, element, key, ex
 		else parentNode[_key] = element.value
 		exec()
 	}
-	if (key === 'value') {
+
+	if (syncTrigger) {
+
+		/*
+		 *  l: listener                 : string
+		 *  s: stopPropagation          : number/undefined
+		 *  i: stopImmediatePropagation : number/undefined
+		 *  p: preventDefault           : number/undefined
+		 *  h: shiftKey                 : number/undefined
+		 *  a: altKey                   : number/undefined
+		 *  c: ctrlKey                  : number/undefined
+		 *  t: metaKey                  : number/undefined
+		 *  u: capture                  : number/undefined
+		 *  k: keyCodes                 : array<number>/undefined
+		 */
+		const {l, s, i, p, h, a, c, t, u, k} = syncTrigger
+		element[addListener](l, (e) => {
+			if (!!h !== !!e.shiftKey ||
+				!!a !== !!e.altKey ||
+				!!c !== !!e.ctrlKey ||
+				!!t !== !!e.metaKey ||
+				(k && k.indexOf(e.which) === -1)) return
+			if (s) e.stopPropagation()
+			if (i) e.stopImmediatePropagation()
+			if (p) e.preventDefault()
+			_update()
+		}, !!u)
+	} else if (key === 'value') {
 		// Listen to input, keyup and change events in order to work in most browsers.
 		element[addListener]('input', _update, true)
 		element[addListener]('keyup', _update, true)
@@ -90,9 +116,10 @@ const addValListener = ({ctx, handlers, subscribers, innerData, element, key, ex
 		// }
 		// element[addListener]('input', removeListener, true)
 	} else {
+		const dispatch = custom && '$dispatch' || 'dispatchEvent'
 		element[addListener]('change', () => {
 			// Trigger change to the element it-self
-			element[dispatch](getEvent('ef-change-event'), {bubbles: true, canceoable: false})
+			element[dispatch](getEvent('--ef-change-event--'), {bubbles: true, canceoable: false})
 			if (element.tagName === 'INPUT' && element.type === 'radio' && element.name !== '') {
 				// Trigger change to the the same named radios
 				const radios = DOM.document.querySelectorAll(`input[name=${element.name}][type=radio]`)
@@ -103,12 +130,12 @@ const addValListener = ({ctx, handlers, subscribers, innerData, element, key, ex
 					/* Event triggering could cause unwanted render triggers
 					 * no better ways came up at the moment
 					 */
-					for (let i of selected) i.dispatchEvent(getEvent('ef-change-event'))
+					for (let i of selected) i.dispatchEvent(getEvent('--ef-change-event--'))
 				}
 			}
 		}, true)
 		// Use custom event to avoid loops and conflicts
-		element[addListener]('ef-change-event', () => {
+		element[addListener]('--ef-change-event--', () => {
 			inform()
 			if (custom) parentNode[_key] = element.$data.checked
 			else parentNode[_key] = element.checked
@@ -156,7 +183,7 @@ const addAttr = ({element, attr, key, ctx, handlers, subscribers, innerData, cus
 			else element[key] = attr
 			return
 		}
-		// Do not set or `is` again
+		// Do not set or update `is` again
 		if (key === 'is') return
 		// Handle namespaces
 		if (key.indexOf(':') > -1) {
@@ -170,7 +197,7 @@ const addAttr = ({element, attr, key, ctx, handlers, subscribers, innerData, cus
 	queue([regTmpl({val: attr, ctx, handlers, subscribers, innerData, handler})])
 }
 
-const addProp = ({element, propPath, value, ctx, handlers, subscribers, innerData, custom}) => {
+const addProp = ({element, propPath, value, syncTrigger, ctx, handlers, subscribers, innerData, custom}) => {
 	const keyPath = ARR.copy(propPath)
 	const lastKey = keyPath.pop()
 	if (custom) keyPath.unshift('$data')
@@ -181,9 +208,9 @@ const addProp = ({element, propPath, value, ctx, handlers, subscribers, innerDat
 			lastNode[lastKey] = val
 		}
 		const _handler = regTmpl({val: value, ctx, handlers, subscribers, innerData, handler})
-		if (propPath.length === 1 && ((lastKey === 'value' ||
-			lastKey === 'checked')) &&
-			!value[0]) addValListener({ctx, handlers, subscribers, innerData, element, key: lastKey, expr: value[1], custom})
+		if (propPath.length === 1 &&
+			(syncTrigger || lastKey === 'value' || lastKey === 'checked') &&
+			!value[0]) addValListener({ctx, syncTrigger, handlers, subscribers, innerData, element, key: lastKey, expr: value[1], custom})
 		queue([_handler])
 	}
 }
@@ -205,7 +232,7 @@ const addEvent = ({element, event, ctx, handlers, subscribers, innerData, custom
 	 *  c: ctrlKey                  : number/undefined
 	 *  t: metaKey                  : number/undefined
 	 *  u: capture                  : number/undefined
-	 *  k: keyCodes                 : array/undefined
+	 *  k: keyCodes                 : array<number>/undefined
 	 *  v: value                    : string/array/undefined
 	 */
 	const {l, m, s, i, p, h, a, c, t, u, k, v} = event
@@ -240,7 +267,7 @@ const createElement = ({info, ctx, innerData, refs, handlers, subscribers, names
 	const tagContent = ctx.scope[t] || t
 	const element = getElement({tagName, tagContent, attrs: a, ref: r, refs, namespace})
 	if (a) for (let key in a) addAttr({element, custom, attr: a[key], key, ctx, handlers, subscribers, innerData})
-	if (p) for (let [propPath, value] of p) addProp({element, custom, value, propPath, ctx, handlers, subscribers, innerData})
+	if (p) for (let [propPath, value, syncTrigger] of p) addProp({element, custom, value, propPath, syncTrigger, ctx, handlers, subscribers, innerData})
 	if (e) for (let event of e) addEvent({element, custom, event, ctx, handlers, subscribers, innerData})
 
 	return element

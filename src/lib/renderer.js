@@ -221,7 +221,7 @@ const EFBaseComponent = class {
 		if (parent) {
 			if (key !== '__DIRECTMOUNT__') {
 				if (parent[key]) {
-					if (Array.isArray(parent[key])) {
+					if (ARR.isArray(parent[key])) {
 						// Remove self from parent list mounting point
 						ARR.remove(parent[key], this)
 					} else parent[key] = nullComponent
