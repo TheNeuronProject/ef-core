@@ -89,7 +89,7 @@ var template = parseEft(
 '\n	>span' +
 '\n		.This is an update only textbox:' +
 '\n	>input' +
-'\n		%value&! = {{updateOnly}}' +
+'\n		%value! = {{updateOnly}}' +
 '\n	+list' +
 '\n	+children')
 
@@ -362,17 +362,34 @@ app.$mount({target: document.body})
 
 
 const MyAudioPlayer = create(parseEft(`
->audio#player
+>br
+>audio
 	%currentTime@timeupdate = {{currentTime}}
+	%duration!@canplay = {{duration}}
 	%src = {{src}}
+	%autoplay = {{autoplay = true}}
 	#controls
-	#autoplay
 >div
+	.Select an audio file: &
 	>input
 		#type = file
 		#accept = audio/*
 		%files!@change = {{files}}
-	.Current  time: {{currentTime}}
+	>br
+	.Custom progress bar: &
+	>input
+		#type = range
+		#step = 0.01
+		#max = {{duration = 0}}
+		%value = {{currentTime = 0}}
+	>br
+	.Autoplay: &
+	>input
+		#type = checkbox
+		%checked = {{autoplay}}
+	>pre
+		|Current time: {{currentTime}}
+		|Total length: {{duration}}
 `))
 
 const myPlayer = new MyAudioPlayer()

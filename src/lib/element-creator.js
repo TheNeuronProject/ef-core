@@ -67,11 +67,12 @@ const regTmpl = ({val, ctx, handlers, subscribers, innerData, handler}) => {
 	return () => val
 }
 
-const addValListener = ({ctx, syncTrigger, handlers, subscribers, innerData, element, lastNode, key, expr, custom}) => {
+const addValListener = ({ctx, syncTrigger, updateLock, handlers, subscribers, innerData, element, lastNode, key, expr, custom}) => {
 	const addListener = custom && '$on' || 'addEventListener'
 	const {parentNode, _key} = initBinding({bind: expr, ctx, handlers, subscribers, innerData})
 
 	const _update = () => {
+		updateLock.locked = true
 		inform()
 		if (custom) parentNode[_key] = lastNode[key]
 		else parentNode[_key] = lastNode[key]
@@ -193,15 +194,21 @@ const addProp = ({element, propPath, value, syncTrigger, updateOnly, ctx, handle
 	const lastNode = resolvePath(keyPath, element)
 	if (typeValid(value)) lastNode[lastKey] = value
 	else {
+		const updateLock = {locked: false}
 		let handler = (val) => {
-			if (lastNode[lastKey] !== val) lastNode[lastKey] = val
+			if (!updateLock.locked && lastNode[lastKey] !== val) {
+				lastNode[lastKey] = val
+			}
+			updateLock.locked = false
 		}
-		// eslint-disable-next-line no-empty-function
-		if (updateOnly) handler = () => {}
+
+		if (updateOnly) handler = () => {
+			updateLock.locked = false
+		}
 		const _handler = regTmpl({val: value, ctx, handlers, subscribers, innerData, handler})
 		if (syncTrigger ||
 			(propPath.length === 1 && (lastKey === 'value' || lastKey === 'checked')) &&
-			!value[0]) addValListener({ctx, syncTrigger, handlers, subscribers, innerData, element, lastNode, key: lastKey, expr: value[1], custom})
+			!value[0]) addValListener({ctx, syncTrigger, updateLock, handlers, subscribers, innerData, element, lastNode, key: lastKey, expr: value[1], custom})
 		queue([_handler])
 	}
 }
