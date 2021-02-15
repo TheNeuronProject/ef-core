@@ -83,6 +83,13 @@ var template = parseEft(
 '\n		%value@keypress.ctrl.13 = {{enterWithCtrlUpdateValue}}' +
 '\n	>span' +
 '\n		.Enter with ctrl pressed at the input box to update this value: {{enterWithCtrlUpdateValue}}' +
+'\n	>br' +
+'\n	>input' +
+'\n		%value = {{updateOnly}}' +
+'\n	>span' +
+'\n		.This is an update only textbox:' +
+'\n	>input' +
+'\n		%value&! = {{updateOnly}}' +
 '\n	+list' +
 '\n	+children')
 
@@ -339,6 +346,7 @@ const App = scoped(create(parseEft(`
 	>br
 	-mount
 	.---layer {{layer}} end---
+>br
 `)), {Logic: efLogic})
 
 inform()
@@ -351,3 +359,28 @@ app.list[0].list.push(new App({$data: {show: false, layer: 2}}))
 
 
 app.$mount({target: document.body})
+
+
+const MyAudioPlayer = create(parseEft(`
+>audio#player
+	%currentTime@timeupdate = {{currentTime}}
+	%src = {{src}}
+	#controls
+	#autoplay
+>div
+	>input
+		#type = file
+		#accept = audio/*
+		%files!@change = {{files}}
+	.Current  time: {{currentTime}}
+`))
+
+const myPlayer = new MyAudioPlayer()
+
+myPlayer.$subscribe('files', ({state, value}) => {
+	if (value && value[0]) {
+		state.$data.src = URL.createObjectURL(value[0])
+	}
+})
+
+myPlayer.$mount({target: document.body})
