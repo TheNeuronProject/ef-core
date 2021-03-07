@@ -8,6 +8,7 @@ import {mixVal} from './utils/literals-mix.js'
 import {getNamespace} from './utils/namespaces.js'
 import dbg from './utils/debug.js'
 
+
 const typeValid = obj => ['number', 'boolean', 'string'].indexOf(typeof obj) > -1
 
 const createByTag = ({tagName, tagContent, attrs, namespace}) => {
@@ -67,54 +68,121 @@ const regTmpl = ({val, ctx, handlers, subscribers, innerData, handler}) => {
 	return () => val
 }
 
-const addValListener = ({ctx, syncTrigger, updateLock, handlers, subscribers, innerData, element, lastNode, key, expr, custom}) => {
+const applyEventListener = ({element, custom, handler, trigger: {l, s, i, p, h, a, c, t, u, e, o, k}}) => {
+
+	/*
+	 *  l: listener                 : string
+	 *  s: stopPropagation          : number/undefined
+	 *  i: stopImmediatePropagation : number/undefined
+	 *  p: preventDefault           : number/undefined
+	 *  h: shiftKey                 : number/undefined
+	 *  a: altKey                   : number/undefined
+	 *  c: ctrlKey                  : number/undefined
+	 *  t: metaKey                  : number/undefined
+	 *  u: capture                  : number/undefined
+	 *  e: passive                  : number/undefined
+	 *  o: once                     : number/undefined
+	 *  k: keyCodes                 : array<number>/undefined
+	 */
+
+	const checkEventProps = (event) => {
+		if (!!h !== !!event.shiftKey ||
+			!!a !== !!event.altKey ||
+			!!c !== !!event.ctrlKey ||
+			!!t !== !!event.metaKey ||
+			(k && k.indexOf(event.which) === -1)) return false
+		return true
+	}
+
+	const handleStopOptions = (event) => {
+		if (s) event.stopPropagation()
+		if (i) event.stopImmediatePropagation()
+	}
+
+	let eventOptions = !!u
+
+	let baseEventHandler = (event) => {
+		handleStopOptions()
+		if (p) event.preventDefault()
+		handler(event)
+	}
+
+	let eventHandler = (event) => {
+		if (!checkEventProps(event)) return
+		baseEventHandler(event)
+	}
+
+	const makePassiveEventHandler = () => {
+		baseEventHandler = (event) => {
+			handleStopOptions()
+			setTimeout(() => handler(event), 0)
+		}
+		eventHandler = (event) => {
+			if (!checkEventProps(event)) return
+			baseEventHandler(event)
+		}
+	}
+
+	const makeOnceEventHandler = () => {
+		const removeListener = custom && '$off' || 'removeEventListener'
+		eventHandler = (event) => {
+			if (!checkEventProps(event)) return
+			element[removeListener](l, eventHandler, eventOptions)
+			baseEventHandler(event)
+		}
+	}
+
+	if (e || o) {
+		if (DOM.passiveSupported || DOM.onceSupported) {
+			eventOptions = {
+				capture: !!u
+			}
+
+			if (e === 0 && DOM.passiveSupported) {
+				eventOptions.passive = false
+			} else if (e) {
+				if (DOM.passiveSupported) eventOptions.passive = true
+				else makePassiveEventHandler()
+			}
+
+			if (o) {
+				if (DOM.onceSupported) eventOptions.once = true
+				else makeOnceEventHandler(eventOptions)
+			}
+
+		} else {
+			if (e) makePassiveEventHandler()
+			if (o) makeOnceEventHandler()
+		}
+	}
+
+	const addListener = custom && '$on' || 'addEventListener'
+	element[addListener](l, eventHandler, eventOptions)
+}
+
+const addValListener = ({ctx, trigger, updateLock, handlers, subscribers, innerData, element, lastNode, key, expr, custom}) => {
 	const addListener = custom && '$on' || 'addEventListener'
 	const {parentNode, _key} = initBinding({bind: expr, ctx, handlers, subscribers, innerData})
 
-	const _update = () => {
+	const handler = () => {
 		updateLock.locked = true
 		inform()
-		if (custom) parentNode[_key] = lastNode[key]
-		else parentNode[_key] = lastNode[key]
+		parentNode[_key] = lastNode[key]
 		exec()
 	}
 
-	if (syncTrigger) {
-
-		/*
-		 *  l: listener                 : string
-		 *  s: stopPropagation          : number/undefined
-		 *  i: stopImmediatePropagation : number/undefined
-		 *  p: preventDefault           : number/undefined
-		 *  h: shiftKey                 : number/undefined
-		 *  a: altKey                   : number/undefined
-		 *  c: ctrlKey                  : number/undefined
-		 *  t: metaKey                  : number/undefined
-		 *  u: capture                  : number/undefined
-		 *  k: keyCodes                 : array<number>/undefined
-		 */
-		const {l, s, i, p, h, a, c, t, u, k} = syncTrigger
-		element[addListener](l, (e) => {
-			if (!!h !== !!e.shiftKey ||
-				!!a !== !!e.altKey ||
-				!!c !== !!e.ctrlKey ||
-				!!t !== !!e.metaKey ||
-				(k && k.indexOf(e.which) === -1)) return
-			if (s) e.stopPropagation()
-			if (i) e.stopImmediatePropagation()
-			if (p) e.preventDefault()
-			_update()
-		}, !!u)
+	if (trigger) {
+		applyEventListener({element, custom, handler, trigger})
 	} else if (key === 'value') {
 		// Listen to input, keyup and change events in order to work in most browsers.
-		element[addListener]('input', _update, true)
-		element[addListener]('keyup', _update, true)
-		element[addListener]('change', _update, true)
+		element[addListener]('input', handler, true)
+		element[addListener]('keyup', handler, true)
+		element[addListener]('change', handler, true)
 	} else {
 		const dispatch = custom && '$dispatch' || 'dispatchEvent'
 		element[addListener]('change', () => {
 			// Trigger change to the element it-self
-			element[dispatch](getEvent('--ef-change-event--'), {bubbles: true, canceoable: false})
+			element[dispatch](getEvent('__ef_change_event__'), {bubbles: true, canceoable: false})
 			if (element.tagName === 'INPUT' && element.type === 'radio' && element.name !== '') {
 				// Trigger change to the the same named radios
 				const radios = DOM.document.querySelectorAll(`input[name=${element.name}][type=radio]`)
@@ -125,12 +193,12 @@ const addValListener = ({ctx, syncTrigger, updateLock, handlers, subscribers, in
 					/* Event triggering could cause unwanted render triggers
 					 * no better ways came up at the moment
 					 */
-					for (let i of selected) i.dispatchEvent(getEvent('--ef-change-event--'))
+					for (let i of selected) i.dispatchEvent(getEvent('__ef_change_event__'))
 				}
 			}
 		}, true)
 		// Use custom event to avoid loops and conflicts
-		element[addListener]('--ef-change-event--', _update)
+		element[addListener]('__ef_change_event__', handler)
 	}
 }
 
@@ -187,7 +255,7 @@ const addAttr = ({element, attr, key, ctx, handlers, subscribers, innerData, cus
 	queue([regTmpl({val: attr, ctx, handlers, subscribers, innerData, handler})])
 }
 
-const addProp = ({element, propPath, value, syncTrigger, updateOnly, ctx, handlers, subscribers, innerData, custom}) => {
+const addProp = ({element, propPath, value, trigger, updateOnly, ctx, handlers, subscribers, innerData, custom}) => {
 	const keyPath = ARR.copy(propPath)
 	const lastKey = keyPath.pop()
 	if (custom) keyPath.unshift('$data')
@@ -206,66 +274,49 @@ const addProp = ({element, propPath, value, syncTrigger, updateOnly, ctx, handle
 			updateLock.locked = false
 		}
 		const _handler = regTmpl({val: value, ctx, handlers, subscribers, innerData, handler})
-		if (syncTrigger ||
+		if (trigger ||
 			(propPath.length === 1 && (lastKey === 'value' || lastKey === 'checked')) &&
-			!value[0]) addValListener({ctx, syncTrigger, updateLock, handlers, subscribers, innerData, element, lastNode, key: lastKey, expr: value[1], custom})
+			!value[0]) addValListener({ctx, trigger, updateLock, handlers, subscribers, innerData, element, lastNode, key: lastKey, expr: value[1], custom})
 		queue([_handler])
 	}
 }
 
 const rawHandler = val => val
 
-const addEvent = ({element, event, ctx, handlers, subscribers, innerData, custom}) => {
-	const addListener = custom && '$on' || 'addEventListener'
+const addEvent = ({element, trigger, ctx, handlers, subscribers, innerData, custom}) => {
 
 	/*
-	 *  l: listener                 : string
 	 *  m: method                   : string
-	 *  s: stopPropagation          : number/undefined
-	 *  i: stopImmediatePropagation : number/undefined
-	 *  p: preventDefault           : number/undefined
-	 *  h: shiftKey                 : number/undefined
-	 *  a: altKey                   : number/undefined
-	 *  c: ctrlKey                  : number/undefined
-	 *  t: metaKey                  : number/undefined
-	 *  u: capture                  : number/undefined
-	 *  k: keyCodes                 : array<number>/undefined
 	 *  v: value                    : string/array/undefined
 	 */
-	const {l, m, s, i, p, h, a, c, t, u, k, v} = event
+	const {m, v} = trigger
 	const _handler = regTmpl({val: v, ctx, handlers, subscribers, innerData, handler: rawHandler})
 
-	element[addListener](l, (e) => {
-		if (!!h !== !!e.shiftKey ||
-			!!a !== !!e.altKey ||
-			!!c !== !!e.ctrlKey ||
-			!!t !== !!e.metaKey ||
-			(k && k.indexOf(e.which) === -1)) return
-		if (s) e.stopPropagation()
-		if (i) e.stopImmediatePropagation()
-		if (p) e.preventDefault()
-		if (ctx.methods[m]) ctx.methods[m]({e, value: _handler(), state: ctx.state})
+	const callEventHandler = (event) => {
+		if (ctx.methods[m]) ctx.methods[m]({e: event, event, value: _handler(), state: ctx.state})
 		else if (process.env.NODE_ENV !== 'production') dbg.warn(`Method named '${m}' not found! Value been passed is:`, _handler())
-	}, !!u)
+	}
+
+	applyEventListener({element, custom, handler: callEventHandler, trigger})
 }
 
 const createElement = ({info, ctx, innerData, refs, handlers, subscribers, namespace, fragment, custom}) => {
 	if (fragment) return new EFFragment()
 
 	/*
-	 *  t: tag       : class | string | int, 0 means fragment
-	 *  a: attr      : object
-	 *  p: prop      : object
-	 *  e: event     : array
-	 *  r: reference : string
+	 *  t: tag           : class | string | int, 0 means fragment
+	 *  a: attr          : object
+	 *  p: prop          : object
+	 *  e: event trigger : array
+	 *  r: reference     : string
 	 */
 	const {t, a, p, e, r} = info
 	const tagName = t
 	const tagContent = ctx.scope[t] || t
 	const element = getElement({tagName, tagContent, attrs: a, ref: r, refs, namespace})
 	if (a) for (let key in a) addAttr({element, custom, attr: a[key], key, ctx, handlers, subscribers, innerData})
-	if (p) for (let [propPath, value, syncTrigger, updateOnly] of p) addProp({element, custom, value, propPath, syncTrigger, updateOnly, ctx, handlers, subscribers, innerData})
-	if (e) for (let event of e) addEvent({element, custom, event, ctx, handlers, subscribers, innerData})
+	if (p) for (let [propPath, value, trigger, updateOnly] of p) addProp({element, custom, value, propPath, trigger, updateOnly, ctx, handlers, subscribers, innerData})
+	if (e) for (let trigger of e) addEvent({element, custom, trigger, ctx, handlers, subscribers, innerData})
 
 	return element
 }
