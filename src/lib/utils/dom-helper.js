@@ -199,7 +199,35 @@ DOM.remove = (node) => {
 // 	node.innerHTML = ''
 // },
 
-const setDOMImpl = sim => assign(DOM, sim)
+// eslint-disable-next-line no-empty-function
+const noop = () => {}
+
+const setDOMImpl = (impl) => {
+	assign(DOM, impl)
+
+	DOM.passiveSupported = false
+	DOM.onceSupported = false
+
+	try {
+		const options = Object.create({}, {
+			passive: {
+				get: () => {
+					DOM.passiveSupported = true
+				}
+			},
+			once: {
+				get: () => {
+					DOM.onceSupported = true
+				}
+			}
+		})
+		DOM.document.addEventListener('__ef_event_option_test__', noop, options)
+		DOM.document.removeEventListener('__ef_event_option_test__', noop, options)
+	} catch (e) {
+
+		/* do nothing */
+	}
+}
 
 if (isBrowser) setDOMImpl({Node, document})
 

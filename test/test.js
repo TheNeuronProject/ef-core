@@ -83,13 +83,6 @@ var template = parseEft(
 '\n		%value@keypress.ctrl.13 = {{enterWithCtrlUpdateValue}}' +
 '\n	>span' +
 '\n		.Enter with ctrl pressed at the input box to update this value: {{enterWithCtrlUpdateValue}}' +
-'\n	>br' +
-'\n	>input' +
-'\n		%value = {{updateOnly}}' +
-'\n	>span' +
-'\n		.This is an update only textbox:' +
-'\n	>input' +
-'\n		%value! = {{updateOnly}}' +
 '\n	+list' +
 '\n	+children')
 
@@ -328,6 +321,7 @@ const efLogic = class extends LogicContainer {
 	}
 }
 
+// Custom logic component test
 const App = scoped(create(parseEft(`
 >br
 >input
@@ -346,7 +340,6 @@ const App = scoped(create(parseEft(`
 	>br
 	-mount
 	.---layer {{layer}} end---
->br
 `)), {Logic: efLogic})
 
 inform()
@@ -361,6 +354,7 @@ app.list[0].list.push(new App({$data: {show: false, layer: 2}}))
 app.$mount({target: document.body})
 
 
+// Custom sync trigger test
 const MyAudioPlayer = create(parseEft(`
 >br
 >audio
@@ -401,3 +395,43 @@ myPlayer.$subscribe('files', ({state, value}) => {
 })
 
 myPlayer.$mount({target: document.body})
+
+// Non passive event handier test
+const PassiveTest = create(parseEft(`
+>br
+>div
+	.Passive Test
+	>button
+		.Passive: Right click on me, menu should pop up
+		@contextmenu.passive.prevent = menuHandler
+	>button
+		.Non Passive: Right click on me, menu should not pop up
+		@contextmenu.prevent = menuHandler
+`))
+
+const passiveTest = new PassiveTest()
+
+passiveTest.$mount({target: document.body})
+
+// Once handler test
+const OnceTest = create(parseEft(`
+>br
+>div
+	.OnceTest
+	>button
+		.Click me, alert should always pop
+		@click = clickHandler
+	>button
+		.Click me, alert should pop only once
+		@click.once = clickHandler
+`))
+
+const onceTest = new OnceTest({
+	$methods: {
+		clickHandler() {
+			alert('clicked!')
+		}
+	}
+})
+
+onceTest.$mount({target: document.body})
