@@ -99,7 +99,7 @@ DOM.append = (node, ...nodes) => {
 
 		inform()
 		for (let i of nodes) {
-			i = new shared.toEFComponent(i)
+			i = shared.toEFComponent(i)
 			node.children.push(i)
 		}
 		exec()
