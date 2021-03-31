@@ -10,7 +10,6 @@ import typeOf from './lib/utils/type-of.js'
 import scoped from './lib/utils/scoped-component.js'
 import {setDOMImpl} from './lib/utils/dom-helper.js'
 import {declareNamespace} from './lib/utils/namespaces.js'
-import {version} from '../package.json'
 
 const registerNS = (attrs, component) => {
 	for (let i in attrs) {
@@ -100,10 +99,10 @@ const create = (ast) => {
 	return EFComponent
 }
 
-let coreVersion = version
+let coreVersion = '0.13.7'
 
 if (process.env.NODE_ENV !== 'production') {
-	coreVersion = `${version}+debug`
+	coreVersion = `${coreVersion}+debug`
 }
 
 export {
