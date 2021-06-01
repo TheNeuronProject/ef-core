@@ -440,7 +440,7 @@ const toEFComponent = (value) => {
 	if (value === null || typeof value === 'undefined' || value instanceof EFBaseComponent) return value
 
 	if (value !== nullComponent) {
-		if (value instanceof Node) return new EFNodeWrapper(value)
+		if (value instanceof DOM.Node) return new EFNodeWrapper(value)
 		else if (typeof value === 'string') return new EFTextFragment(value)
 		else return new EFTextFragment(JSON.stringify(value))
 	}
