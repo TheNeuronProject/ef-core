@@ -102,7 +102,7 @@ const applyEventListener = ({element, custom, handler, trigger: {l, s, i, p, h, 
 	let eventOptions = !!u
 
 	let baseEventHandler = (event) => {
-		handleStopOptions()
+		handleStopOptions(event)
 		if (p) event.preventDefault()
 		handler(event)
 	}
@@ -114,7 +114,7 @@ const applyEventListener = ({element, custom, handler, trigger: {l, s, i, p, h, 
 
 	const makePassiveEventHandler = () => {
 		baseEventHandler = (event) => {
-			handleStopOptions()
+			handleStopOptions(event)
 			setTimeout(() => handler(event), 0)
 		}
 		eventHandler = (event) => {
