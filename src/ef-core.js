@@ -21,14 +21,14 @@ const registerNS = (attrs, component) => {
 }
 
 // Iintialize components
-const initComponent = (node, component) => {
+const initComponent = (component, node) => {
 	const nodeType = typeOf(node)
 	switch (nodeType) {
 		case 'array': {
 			const [info, ...childNodes] = node
 			if (typeOf(info) === 'object') {
 				if (info.a) registerNS(info.a, component)
-				for (let i of childNodes) initComponent(i, component)
+				for (let i of childNodes) initComponent(component, i)
 			}
 			break
 		}
@@ -95,11 +95,11 @@ const create = (ast) => {
 	Object.defineProperty(EFComponent.prototype, 'constructor', {enumerable: false})
 
 	Object.defineProperty(EFComponent, '__local_namespaces', {enumerable: false, value: {}})
-	initComponent(ast, EFComponent)
+	initComponent(EFComponent, ast)
 	return EFComponent
 }
 
-let coreVersion = '0.13.8'
+let coreVersion = '0.13.10'
 
 if (process.env.NODE_ENV !== 'production') {
 	coreVersion = `${coreVersion}+debug`
