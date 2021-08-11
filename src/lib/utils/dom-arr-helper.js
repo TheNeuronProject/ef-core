@@ -71,11 +71,19 @@ const DOMARR = {
 		exec()
 		return this
 	},
-	splice(...args) {
+	splice({ctx, key, anchor}, ...args) {
 		if (this.length === 0) return this
 		const spliced = ARR.splice(ARR.copy(this), ...args)
 		inform()
 		for (let i of spliced) i.$umount()
+		if (args[2]) {
+			const idx = args[0]
+			if (idx > 0) anchor = this[idx].$ctx.nodeInfo.placeholder
+			const insertItem = shared.toEFComponent(args[2])
+			insertItem.$mount({parent: ctx.state, key})
+			DOM.after(anchor, insertItem.$ctx.nodeInfo.placeholder)
+			ARR.splice(this, idx, 0, insertItem)
+		}
 		exec()
 		return spliced
 	},
@@ -101,7 +109,7 @@ const defineArr = (arr, info) => {
 		reverse: {value: DOMARR.reverse.bind(arr, info)},
 		shift: {value: DOMARR.shift},
 		sort: {value: DOMARR.sort.bind(arr, info)},
-		splice: {value: DOMARR.splice},
+		splice: {value: DOMARR.splice.bind(arr, info)},
 		unshift: {value: DOMARR.unshift.bind(arr, info)}
 	})
 	return arr
