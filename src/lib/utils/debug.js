@@ -14,10 +14,10 @@ const getDbg = () => {
 		const assemblePrintContent = (type, args) => `[EF][${type}] ${args.join(' ')}`
 
 		return {
-			log: args => print(assemblePrintContent('LOG ', args)),
-			info: args => print(assemblePrintContent('INFO', args)),
-			warn: args => print(assemblePrintContent('WARN', args)),
-			error: args => print(assemblePrintContent('ERROR', args))
+			log: (...args) => print(assemblePrintContent('LOG ', args)),
+			info: (...args) => print(assemblePrintContent('INFO', args)),
+			warn: (...args) => print(assemblePrintContent('WARN', args)),
+			error: (...args) => print(assemblePrintContent('ERROR', args))
 		}
 	}
 
