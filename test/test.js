@@ -272,15 +272,15 @@ state5.$mount({target: document.body})
 
 ef.declareNamespace('aaa', 'test')
 
-var customBtn = class extends HTMLButtonElement {
-	constructor(...args) {
-		super(...args)
-		this.addEventListener('click', () => {alert('my button clicked')})
-	}
-}
-customElements.define('my-btn', customBtn, {extends: 'button'})
-var state6 = new module4(null, {h1: customBtn})
-state6.$mount({target: document.body})
+// var customBtn = class extends HTMLButtonElement {
+// 	constructor(...args) {
+// 		super(...args)
+// 		this.addEventListener('click', () => {alert('my button clicked')})
+// 	}
+// }
+// customElements.define('my-btn', customBtn, {extends: 'button'})
+// var state6 = new module4(null, {h1: customBtn})
+// state6.$mount({target: document.body})
 
 var state7 = new module4(null, {h1: {tag: 'aaa:button', is: 'my-btn'}})
 state7.$mount({target: document.body})
