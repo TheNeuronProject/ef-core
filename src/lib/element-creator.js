@@ -169,6 +169,7 @@ const addValListener = ({ctx, trigger, updateLock, handlers, subscribers, innerD
 		inform()
 		parentNode[_key] = lastNode[key]
 		exec()
+		updateLock.locked = false
 	}
 
 	if (trigger) {
