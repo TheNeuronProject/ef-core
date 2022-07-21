@@ -20,7 +20,7 @@ const registerNS = (attrs, component) => {
 	}
 }
 
-// Iintialize components
+// Intialize components
 const initComponent = (component, node) => {
 	const nodeType = typeOf(node)
 	switch (nodeType) {
