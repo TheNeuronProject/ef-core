@@ -57,8 +57,7 @@ const resolve = ({_path, _key, data, handlers, subscribers, innerData}) => {
 	const {handlerNode, subscriberNode, dataNode} = resolveAllPath({_path, handlers, subscribers, innerData})
 	if (!handlerNode[_key]) handlerNode[_key] = []
 	if (!subscriberNode[_key]) subscriberNode[_key] = []
-	/* eslint no-undefined: "off" */
-	if (!Object.prototype.hasOwnProperty.call(dataNode, _key)) dataNode[_key] = undefined
+	if (!Object.prototype.hasOwnProperty.call(dataNode, _key)) dataNode[_key] = parentNode[_key]
 	return {parentNode, handlerNode: handlerNode[_key], subscriberNode: subscriberNode[_key], dataNode}
 }
 
