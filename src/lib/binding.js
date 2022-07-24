@@ -49,8 +49,9 @@ const initBinding = ({bind, ctx, handlers, subscribers, innerData}) => {
 		innerData
 	})
 
-	// Initlize data binding node if not exist
-	if (!Object.prototype.hasOwnProperty.call(parentNode, _key)) initDataNode({parentNode, dataNode, handlerNode, subscriberNode, ctx, _key})
+	// Initlize data binding node if not initialized
+	const keyStatus = Object.getOwnPropertyDescriptor(parentNode, _key)
+	if (!keyStatus || !(keyStatus.get || keyStatus.set)) initDataNode({parentNode, dataNode, handlerNode, subscriberNode, ctx, _key})
 	// Update default value
 	// bind[1] is the default value for this node
 	if (bind.length > 1) parentNode[_key] = bind[1]
