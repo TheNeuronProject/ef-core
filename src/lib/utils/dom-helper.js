@@ -57,6 +57,11 @@ const handleMountingPoint = (element, tempFragment) => {
 	} else appendNode(node, tempFragment)
 }
 
+DOM.isNodeInstance = (node) => {
+	if (DOM.isNode) return DOM.isNode(node)
+	return node instanceof DOM.Node
+}
+
 DOM.before = (node, ...nodes) => {
 	const tempFragment = DOM.document.createDocumentFragment()
 	inform()
@@ -111,7 +116,7 @@ DOM.append = (node, ...nodes) => {
 	const tempFragment = DOM.document.createDocumentFragment()
 	for (let i of nodes) {
 		if (isInstance(i, EFFragment)) i.appendTo(tempFragment)
-		else if (i instanceof DOM.Node) {
+		else if (DOM.isNodeInstance(i)) {
 			DOM.Node.prototype.appendChild.call(tempFragment, i)
 			handleMountingPoint(i, tempFragment)
 		} else if (i instanceof shared.EFBaseComponent) {
