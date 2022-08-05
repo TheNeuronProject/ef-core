@@ -99,7 +99,10 @@ const applyEventListener = ({element, custom, handler, trigger: {l, s, i, p, h, 
 		if (i) event.stopImmediatePropagation()
 	}
 
-	let eventOptions = !!u
+	let eventOptions = {
+		capture: !!u,
+		efInternal: true
+	}
 
 	let baseEventHandler = (event) => {
 		handleStopOptions(event)
@@ -134,10 +137,6 @@ const applyEventListener = ({element, custom, handler, trigger: {l, s, i, p, h, 
 
 	if (e || o) {
 		if (DOM.passiveSupported || DOM.onceSupported) {
-			eventOptions = {
-				capture: !!u
-			}
-
 			if (e === 0 && DOM.passiveSupported) {
 				eventOptions.passive = false
 			} else if (e) {
@@ -172,18 +171,23 @@ const addValListener = ({ctx, trigger, updateLock, handlers, subscribers, innerD
 		updateLock.locked = false
 	}
 
+	const eventOptions = {
+		capture: true,
+		efInternal: true
+	}
+
 	if (trigger) {
 		applyEventListener({element, custom, handler, trigger})
 	} else if (key === 'value') {
 		// Listen to input, keyup and change events in order to work in most browsers.
-		element[addListener]('input', handler, true)
-		element[addListener]('keyup', handler, true)
-		element[addListener]('change', handler, true)
+		element[addListener]('input', handler, eventOptions)
+		element[addListener]('keyup', handler, eventOptions)
+		element[addListener]('change', handler, eventOptions)
 	} else {
 		const dispatch = custom && '$dispatch' || 'dispatchEvent'
 		element[addListener]('change', () => {
 			// Trigger change to the element it-self
-			element[dispatch](getEvent('__ef_change_event__'), {bubbles: true, canceoable: false})
+			element[dispatch](getEvent('__ef_change_event__'), {bubbles: true, canceoable: false, efInternal: true})
 			if (element.tagName === 'INPUT' && element.type === 'radio' && element.name !== '') {
 				// Trigger change to the the same named radios
 				const radios = DOM.document.querySelectorAll(`input[name=${element.name}][type=radio]`)
@@ -197,7 +201,7 @@ const addValListener = ({ctx, trigger, updateLock, handlers, subscribers, innerD
 					for (let i of selected) i.dispatchEvent(getEvent('__ef_change_event__'))
 				}
 			}
-		}, true)
+		}, eventOptions)
 		// Use custom event to avoid loops and conflicts
 		element[addListener]('__ef_change_event__', handler)
 	}

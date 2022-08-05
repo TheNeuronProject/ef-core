@@ -309,22 +309,27 @@ const EFBaseComponent = class {
 
 	/**
 	 * Add custom event listener on this component
-	 * @param {...*} args - Same as Node.addEventListener
+	 * @param {string} eventName - Name of the event
+	 * @param {function} handler - Handler for the event
+	 * @param {object|boolean} options - Event listener options or useCapture
 	 * @returns {*} - Same as the return of Node.addEventListener
 	 */
-	$on(...args) {
+	$on(eventName, handler, options = {}) {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
-		return this.$ctx.nodeInfo.placeholder.addEventListener(...args)
+		if (typeof options === 'boolean') options = {capture: options}
+		return this.$ctx.nodeInfo.placeholder.addEventListener(eventName, handler, assign({efInternal: true}, options))
 	}
 
 	/**
 	 * Remove custom event listener on this component
-	 * @param {...*} args - Same as Node.removeEventListener
+	 * @param {string} eventName - Name of the event
+	 * @param {function} handler - Handler for the event
+	 * @param {object|boolean} options - Event listener options or useCapture
 	 * @returns {*} - Same as the return of Node.removeEventListener
 	 */
-	$off(...args) {
+	$off(eventName, handler, options) {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
-		return this.$ctx.nodeInfo.placeholder.removeEventListener(...args)
+		return this.$ctx.nodeInfo.placeholder.removeEventListener(eventName, handler, options)
 	}
 
 	/**
@@ -440,7 +445,7 @@ const toEFComponent = (value) => {
 	if (value === null || typeof value === 'undefined' || value instanceof EFBaseComponent) return value
 
 	if (value !== nullComponent) {
-		if (value instanceof DOM.Node) return new EFNodeWrapper(value)
+		if (DOM.isNodeInstance(value)) return new EFNodeWrapper(value)
 		else if (typeof value === 'string') return new EFTextFragment(value)
 		else return new EFTextFragment(JSON.stringify(value))
 	}

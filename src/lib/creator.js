@@ -124,7 +124,7 @@ const bindMountingList = ({ctx, key, anchor}) => {
 
 // Walk through the AST to perform proper actions
 const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, subscribers, namespace, create}) => {
-	if (node instanceof DOM.Node) {
+	if (DOM.isNodeInstance(node)) {
 		DOM.append(element, node)
 		return
 	}
