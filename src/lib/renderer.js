@@ -81,6 +81,7 @@ const EFBaseComponent = class {
 		const subscribers = {}
 		const nodeInfo = {
 			placeholder: null,
+			eventBus: null,
 			replace: [],
 			parent: null,
 			key: null
@@ -94,6 +95,9 @@ const EFBaseComponent = class {
 
 		if (process.env.NODE_ENV === 'production') nodeInfo.placeholder = DOM.document.createTextNode('')
 		else nodeInfo.placeholder = DOM.document.createComment('EF COMPONENT PLACEHOLDER')
+
+		if (DOM.textNodeSupportsEvent) nodeInfo.eventBus = nodeInfo.placeholder
+		else nodeInfo.eventBus = document.createElement('i')
 
 		const mount = () => {
 			if (nodeInfo.replace.length > 0) {
@@ -289,7 +293,7 @@ const EFBaseComponent = class {
 	 */
 	$dispatch(event) {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
-		return this.$ctx.nodeInfo.placeholder.dispatchEvent(event)
+		return this.$ctx.nodeInfo.eventBus.dispatchEvent(event)
 	}
 
 	/**
@@ -312,12 +316,14 @@ const EFBaseComponent = class {
 	 * @param {string} eventName - Name of the event
 	 * @param {function} handler - Handler for the event
 	 * @param {object|boolean} options - Event listener options or useCapture
-	 * @returns {*} - Same as the return of Node.addEventListener
+	 * @returns {function} - Event Handler disposal method
 	 */
 	$on(eventName, handler, options = {}) {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		if (typeof options === 'boolean') options = {capture: options}
-		return this.$ctx.nodeInfo.placeholder.addEventListener(eventName, handler, assign({efInternal: true}, options))
+		options = assign({efInternal: true}, options)
+		this.$ctx.nodeInfo.eventBus.addEventListener(eventName, handler, options)
+		return () => this.$off(eventName, handler, options)
 	}
 
 	/**
@@ -329,7 +335,9 @@ const EFBaseComponent = class {
 	 */
 	$off(eventName, handler, options) {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
-		return this.$ctx.nodeInfo.placeholder.removeEventListener(eventName, handler, options)
+		if (typeof options === 'boolean') options = {capture: options}
+		options = assign({efInternal: true}, options)
+		return this.$ctx.nodeInfo.eventBus.removeEventListener(eventName, handler, assign({efInternal: true}, options))
 	}
 
 	/**

@@ -1,18 +1,15 @@
 import {DOM} from './dom-helper.js'
 
 /**
- * @typedef {{bubbles: boolean, cancelable: boolean}} EFEventOptions
+ * @typedef {{bubbles: boolean, cancelable: boolean, composed: boolean}} EFEventOptions
  */
 
 /* Get new events that works in all target browsers
  * though a little bit old-fashioned
  */
-const getEvent = (name, {bubbles, cancelable} = {
-	bubbles: false,
-	cancelable: false
-}) => {
-	const event = DOM.document.createEvent('CustomEvent')
-	event.initEvent(name, bubbles, cancelable)
+const getEvent = (name, options = {}) => {
+	const event = DOM.document.createEvent && DOM.document.createEvent('CustomEvent') || new Event(name, options)
+	if (event.initEvent) event.initEvent(name, options.bubbles, options.cancelable)
 	return event
 }
 

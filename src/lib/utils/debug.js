@@ -1,8 +1,8 @@
 const getDbg = () => {
+	// eslint-disable-next-line no-empty-function
+	const emptyFn = () => {}
 	if (typeof console === 'undefined') {
 		if (typeof print === 'undefined') {
-			// eslint-disable-next-line no-empty-function
-			const emptyFn = () => {}
 			return {
 				log: emptyFn,
 				info: emptyFn,
@@ -24,10 +24,10 @@ const getDbg = () => {
 	// Wrap console functions for `[EF]` prefix
 	const strTpl = '[EF] %s'
 	return {
-		log: console.log.bind(console, strTpl),
-		info: console.info.bind(console, strTpl),
-		warn: console.warn.bind(console, strTpl),
-		error: console.error.bind(console, strTpl)
+		log: console.log && console.log.bind(console, strTpl) || emptyFn,
+		info: console.info && console.info.bind(console, strTpl) || emptyFn,
+		warn: console.warn && console.warn.bind(console, strTpl) || emptyFn,
+		error: console.error && console.error.bind(console, strTpl) || emptyFn
 	}
 }
 
