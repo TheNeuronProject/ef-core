@@ -210,7 +210,7 @@ const noop = () => {}
 const setDOMImpl = (impl) => {
 	assign(DOM, impl)
 
-	const dummyText = document.createTextNode('')
+	const dummyText = DOM.document.createTextNode('')
 
 	DOM.textNodeSupportsEvent = !!dummyText.addEventListener
 	DOM.passiveSupported = false
