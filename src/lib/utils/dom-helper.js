@@ -70,11 +70,11 @@ DOM.before = (node, ...nodes) => {
 			i.$mount({target: tempFragment})
 		} else if (isInstance(i, EFFragment)) i.appendTo(tempFragment)
 		else {
-			DOM.Node.prototype.appendChild.call(tempFragment, i)
+			tempFragment.appendChild(i)
 			handleMountingPoint(i, tempFragment)
 		}
 	}
-	DOM.Node.prototype.insertBefore.call(node.parentNode, tempFragment, node)
+	node.parentNode.insertBefore(tempFragment, node)
 	exec()
 }
 
@@ -85,10 +85,10 @@ DOM.after = (node, ...nodes) => {
 		if (i instanceof shared.EFBaseComponent) {
 			i.$mount({target: tempFragment})
 		} else if (isInstance(i, EFFragment)) i.appendTo(tempFragment)
-		else DOM.Node.prototype.appendChild.call(tempFragment, i)
+		else tempFragment.appendChild(i)
 	}
-	if (node.nextSibling) DOM.Node.prototype.insertBefore.call(node.parentNode, tempFragment, node.nextSibling)
-	else DOM.Node.prototype.appendChild.call(node.parentNode, tempFragment)
+	if (node.nextSibling) node.parentNode.insertBefore(tempFragment, node.nextSibling)
+	else node.parentNode.appendChild(tempFragment)
 	exec()
 }
 
@@ -117,19 +117,19 @@ DOM.append = (node, ...nodes) => {
 	for (let i of nodes) {
 		if (isInstance(i, EFFragment)) i.appendTo(tempFragment)
 		else if (DOM.isNodeInstance(i)) {
-			DOM.Node.prototype.appendChild.call(tempFragment, i)
+			tempFragment.appendChild(i)
 			handleMountingPoint(i, tempFragment)
 		} else if (i instanceof shared.EFBaseComponent) {
 			i.$mount({target: tempFragment})
 		}
 	}
-	DOM.Node.prototype.appendChild.call(node, tempFragment)
+	node.appendChild(tempFragment)
 }
 
 DOM.remove = (node) => {
 	if (isInstance(node, EFFragment)) node.remove()
 	else if (node instanceof shared.EFBaseComponent) node.$umount()
-	else DOM.Node.prototype.removeChild.call(node.parentNode, node)
+	else node.parentNode.removeChild(node)
 }
 
 // addClass(node, className) {
@@ -158,7 +158,7 @@ DOM.remove = (node) => {
 
 // replaceWith(node, newNode) {
 // 	const parent = node.parentNode
-// 	if (parent) DOM.Node.prototype.replaceChild.call(parent, newNode, node)
+// 	if (parent) parent.replaceChild(newNode, node)
 // },
 
 // swap(node, newNode) {
@@ -167,8 +167,8 @@ DOM.remove = (node) => {
 // 	const nodeSibling = node.nextSibling
 // 	const newNodeSibling = newNode.nextSibling
 // 	if (nodeParent && newNodeParent) {
-// 		DOM.Node.prototype.insertBefore.call(nodeParent, newNode, nodeSibling)
-// 		DOM.Node.prototype.insertBefore.call(newNodeParent, node, newNodeSibling)
+// 		nodeParent.insertBefore(newNode, nodeSibling)
+// 		newNodeParent.insertBefore(node, newNodeSibling)
 // 	}
 // },
 
@@ -179,24 +179,24 @@ DOM.remove = (node) => {
 // 	const tempFragment = DOM.document.createDocumentFragment()
 // 	nodes.reverse()
 // 	for (let i of nodes) {
-// 		DOM.Node.prototype.appendChild.call(tempFragment, i)
+// 		tempFragment.appendChild(i)
 // 	}
 // 	if (node.firstChild) {
-// 		DOM.Node.prototype.insertBefore.call(node, tempFragment, node.firstChild)
+// 		node.insertBefore(tempFragment, node.firstChild)
 // 	} else {
-// 		DOM.Node.prototype.appendChild.call(node, tempFragment)
+// 		node.appendChild(tempFragment)
 // 	}
 // },
 
 // appendTo(node, newNode) {
-// 	DOM.Node.prototype.appendChild.call(newNode, node)
+// 	newNode.appendChild(node)
 // },
 
 // prependTo(node, newNode) {
 // 	if (newNode.firstChild) {
-// 		DOM.Node.prototype.insertBefore.call(newNode, node, node.firstChild)
+// 		newNode.insertBefore(node, node.firstChild)
 // 	} else {
-// 		DOM.Node.prototype.appendChild.call(newNode, node)
+// 		newNode.appendChild(node)
 // 	}
 // },
 
@@ -210,6 +210,9 @@ const noop = () => {}
 const setDOMImpl = (impl) => {
 	assign(DOM, impl)
 
+	const dummyText = document.createTextNode('')
+
+	DOM.textNodeSupportsEvent = !!dummyText.addEventListener
 	DOM.passiveSupported = false
 	DOM.onceSupported = false
 
@@ -234,6 +237,6 @@ const setDOMImpl = (impl) => {
 	}
 }
 
-if (isBrowser) setDOMImpl({Node, document})
+if (isBrowser) setDOMImpl({document, Node})
 
 export {DOM, EFFragment, mountingPointStore, setDOMImpl}
