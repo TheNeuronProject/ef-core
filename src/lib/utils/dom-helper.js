@@ -1,5 +1,6 @@
 // import ARR from './array-helper.js'
 import isInstance from './fast-instance-of.js'
+import noop from './noop.js'
 import {assign} from './polyfills.js'
 import {prepareArgs} from './buble-fix.js'
 import dbg from './debug.js'
@@ -203,9 +204,6 @@ DOM.remove = (node) => {
 // empty(node) {
 // 	node.innerHTML = ''
 // },
-
-// eslint-disable-next-line no-empty-function
-const noop = () => {}
 
 const setDOMImpl = (impl) => {
 	assign(DOM, impl)
