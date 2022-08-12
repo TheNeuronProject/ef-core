@@ -321,7 +321,7 @@ const EFBaseComponent = class {
 	$on(eventName, handler, options = {}) {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		if (typeof options === 'boolean') options = {capture: options}
-		options = assign({efInternal: true}, options)
+		options = assign({mode: 'DOM'}, options)
 		this.$ctx.nodeInfo.eventBus.addEventListener(eventName, handler, options)
 		return () => this.$off(eventName, handler, options)
 	}
@@ -336,8 +336,8 @@ const EFBaseComponent = class {
 	$off(eventName, handler, options) {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		if (typeof options === 'boolean') options = {capture: options}
-		options = assign({efInternal: true}, options)
-		return this.$ctx.nodeInfo.eventBus.removeEventListener(eventName, handler, assign({efInternal: true}, options))
+		options = assign({mode: 'DOM'}, options)
+		return this.$ctx.nodeInfo.eventBus.removeEventListener(eventName, handler, assign({mode: 'DOM'}, options))
 	}
 
 	/**
