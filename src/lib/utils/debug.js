@@ -1,13 +1,13 @@
+import noop from './noop.js'
+
 const getDbg = () => {
-	// eslint-disable-next-line no-empty-function
-	const emptyFn = () => {}
 	if (typeof console === 'undefined') {
 		if (typeof print === 'undefined') {
 			return {
-				log: emptyFn,
-				info: emptyFn,
-				warn: emptyFn,
-				error: emptyFn
+				log: noop,
+				info: noop,
+				warn: noop,
+				error: noop
 			}
 		}
 
@@ -24,10 +24,10 @@ const getDbg = () => {
 	// Wrap console functions for `[EF]` prefix
 	const strTpl = '[EF] %s'
 	return {
-		log: console.log && console.log.bind(console, strTpl) || emptyFn,
-		info: console.info && console.info.bind(console, strTpl) || emptyFn,
-		warn: console.warn && console.warn.bind(console, strTpl) || emptyFn,
-		error: console.error && console.error.bind(console, strTpl) || emptyFn
+		log: console.log && console.log.bind(console, strTpl) || noop,
+		info: console.info && console.info.bind(console, strTpl) || noop,
+		warn: console.warn && console.warn.bind(console, strTpl) || noop,
+		error: console.error && console.error.bind(console, strTpl) || noop
 	}
 }
 

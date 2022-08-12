@@ -6,7 +6,6 @@ import {DOM, EFFragment} from './utils/dom-helper.js'
 import getEvent from './utils/event-helper.js'
 import {mixVal} from './utils/literals-mix.js'
 import {getNamespace} from './utils/namespaces.js'
-import dbg from './utils/debug.js'
 
 
 const typeValid = obj => ['number', 'boolean', 'string'].indexOf(typeof obj) > -1
@@ -101,7 +100,7 @@ const applyEventListener = ({element, custom, handler, trigger: {l, s, i, p, h, 
 
 	let eventOptions = {
 		capture: !!u,
-		efInternal: true
+		mode: 'DOM'
 	}
 
 	let baseEventHandler = (event) => {
@@ -173,7 +172,7 @@ const addValListener = ({ctx, trigger, updateLock, handlers, subscribers, innerD
 
 	const eventOptions = {
 		capture: true,
-		efInternal: true
+		mode: 'DOM'
 	}
 
 	if (trigger) {
@@ -187,7 +186,7 @@ const addValListener = ({ctx, trigger, updateLock, handlers, subscribers, innerD
 		const dispatch = custom && '$dispatch' || 'dispatchEvent'
 		element[addListener]('change', () => {
 			// Trigger change to the element it-self
-			element[dispatch](getEvent('__ef_change_event__'), {bubbles: true, canceoable: false, efInternal: true})
+			element[dispatch](getEvent('__ef_change_event__'), {bubbles: true, canceoable: false, mode: 'DOM'})
 			if (element.tagName === 'INPUT' && element.type === 'radio' && element.name !== '') {
 				// Trigger change to the the same named radios
 				const radios = DOM.document.querySelectorAll(`input[name=${element.name}][type=radio]`)
@@ -299,7 +298,7 @@ const addEvent = ({element, trigger, ctx, handlers, subscribers, innerData, cust
 
 	const callEventHandler = (event) => {
 		if (ctx.methods[m]) ctx.methods[m]({e: event, event, value: _handler(), state: ctx.state})
-		else if (process.env.NODE_ENV !== 'production') dbg.warn(`Method named '${m}' not found! Value been passed is:`, _handler())
+		else ctx.state.$emit(m)
 	}
 
 	applyEventListener({element, custom, handler: callEventHandler, trigger})
