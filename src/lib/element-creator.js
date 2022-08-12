@@ -299,7 +299,7 @@ const addEvent = ({element, trigger, ctx, handlers, subscribers, innerData, cust
 
 	const callEventHandler = (event) => {
 		if (ctx.methods[m]) ctx.methods[m]({e: event, event, value: _handler(), state: ctx.state})
-		else if (process.env.NODE_ENV !== 'production') dbg.warn(`Method named '${m}' not found! Value been passed is:`, _handler())
+		else ctx.state.$emit(m)
 	}
 
 	applyEventListener({element, custom, handler: callEventHandler, trigger})
