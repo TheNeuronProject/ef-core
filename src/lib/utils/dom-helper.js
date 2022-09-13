@@ -64,38 +64,77 @@ DOM.isNodeInstance = (node) => {
 }
 
 DOM.before = (node, ...nodes) => {
-	const tempFragment = DOM.document.createDocumentFragment()
-	inform()
-	for (let i of nodes) {
-		if (i instanceof shared.EFBaseComponent) {
-			i.$mount({target: tempFragment})
-		} else if (isInstance(i, EFFragment)) i.appendTo(tempFragment)
-		else {
-			tempFragment.appendChild(i)
-			handleMountingPoint(i, tempFragment)
+	let child = null
+	if (nodes.length === 1 && DOM.isNodeInstance(node[0])) child = node[0]
+	else {
+		const tempFragment = DOM.document.createDocumentFragment()
+		inform()
+		for (let i of nodes) {
+			if (i instanceof shared.EFBaseComponent) {
+				i.$mount({target: tempFragment})
+			} else if (isInstance(i, EFFragment)) i.appendTo(tempFragment)
+			else {
+				tempFragment.appendChild(i)
+				handleMountingPoint(i, tempFragment)
+			}
 		}
+
+		child = tempFragment
 	}
-	node.parentNode.insertBefore(tempFragment, node)
+
+	node.parentNode.insertBefore(child, node)
+
 	exec()
 }
 
 DOM.after = (node, ...nodes) => {
-	const tempFragment = DOM.document.createDocumentFragment()
-	inform()
-	for (let i of nodes) {
-		if (i instanceof shared.EFBaseComponent) {
-			i.$mount({target: tempFragment})
-		} else if (isInstance(i, EFFragment)) i.appendTo(tempFragment)
-		else tempFragment.appendChild(i)
+	let child = null
+	if (nodes.length === 1 && DOM.isNodeInstance(node[0])) child = node[0]
+	else {
+		const tempFragment = DOM.document.createDocumentFragment()
+		inform()
+		for (let i of nodes) {
+			if (i instanceof shared.EFBaseComponent) {
+				i.$mount({target: tempFragment})
+			} else if (isInstance(i, EFFragment)) i.appendTo(tempFragment)
+			else tempFragment.appendChild(i)
+		}
+
+		child = tempFragment
 	}
-	if (node.nextSibling) node.parentNode.insertBefore(tempFragment, node.nextSibling)
-	else node.parentNode.appendChild(tempFragment)
+
+	if (node.nextSibling) node.parentNode.insertBefore(child, node.nextSibling)
+	else node.parentNode.appendChild(child)
+
 	exec()
 }
 
 DOM.append = (node, ...nodes) => {
-	// Handle fragment
-	if (isInstance(node, EFFragment)) return node.append(...nodes)
+	if (DOM.isNodeInstance(node)) {
+		if ([1,9,11].indexOf(node.nodeType) === -1) return
+
+		let child = null
+		if (nodes.length === 1 && DOM.isNodeInstance(node[0])) child = node[0]
+		else {
+			const tempFragment = DOM.document.createDocumentFragment()
+			for (let i of nodes) {
+				if (isInstance(i, EFFragment)) i.appendTo(tempFragment)
+				else if (DOM.isNodeInstance(i)) {
+					tempFragment.appendChild(i)
+					handleMountingPoint(i, tempFragment)
+				} else if (i instanceof shared.EFBaseComponent) {
+					i.$mount({target: tempFragment})
+				}
+			}
+
+			child = tempFragment
+		}
+
+		node.appendChild(child)
+
+		return
+	}
+
 	// Handle EFComponent
 	if (node instanceof shared.EFBaseComponent) {
 		if (!(ARR.isArray(node.children))) {
@@ -113,18 +152,8 @@ DOM.append = (node, ...nodes) => {
 		return
 	}
 
-	if ([1,9,11].indexOf(node.nodeType) === -1) return
-	const tempFragment = DOM.document.createDocumentFragment()
-	for (let i of nodes) {
-		if (isInstance(i, EFFragment)) i.appendTo(tempFragment)
-		else if (DOM.isNodeInstance(i)) {
-			tempFragment.appendChild(i)
-			handleMountingPoint(i, tempFragment)
-		} else if (i instanceof shared.EFBaseComponent) {
-			i.$mount({target: tempFragment})
-		}
-	}
-	node.appendChild(tempFragment)
+	// Handle fragment
+	if (isInstance(node, EFFragment)) return node.append(...nodes)
 }
 
 DOM.remove = (node) => {
