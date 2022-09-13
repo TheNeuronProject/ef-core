@@ -1,6 +1,6 @@
 // Import everything
 import {EFBaseComponent, EFNodeWrapper, EFTextFragment, Fragment, toEFComponent} from './lib/renderer.js'
-import {applyMountingPoint} from './lib/creator.js'
+import {applyMountingPoint, getNodeAST} from './lib/creator.js'
 import mountOptions from './mount-options.js'
 import createElement from './lib/jsx-create-element.js'
 import mapAttrs from './lib/map-attrs.js'
@@ -121,6 +121,7 @@ export {
 	isPaused,
 	mountOptions,
 	setDOMImpl,
+	getNodeAST,
 	declareNamespace,
 	coreVersion as version
 }

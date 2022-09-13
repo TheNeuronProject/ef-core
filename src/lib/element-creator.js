@@ -145,7 +145,7 @@ const applyEventListener = ({element, custom, handler, trigger: {l, s, i, p, h, 
 
 			if (o) {
 				if (DOM.onceSupported) eventOptions.once = true
-				else makeOnceEventHandler(eventOptions)
+				else makeOnceEventHandler()
 			}
 
 		} else {

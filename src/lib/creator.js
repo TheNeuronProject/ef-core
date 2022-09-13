@@ -15,6 +15,7 @@ const mathNS = getNamespace('math')
 const htmlNS = getNamespace('html')
 
 const nullComponent = Object.create(null)
+const astStore = new WeakMap()
 
 const checkDestroyed = (state) => {
 	if (!state.$ctx) throw new Error('[EF] This component has been destroyed!')
@@ -150,9 +151,9 @@ const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, su
 			// Multi node mounting point
 			else bindMountingList({ctx, key: node.n, anchor})
 			// Append anchor
-			if (process.env.NODE_ENV !== 'production') DOM.append(element, DOM.document.createComment(`EF MOUNTING POINT '${node.n}' START`))
+			if (process.env.NODE_ENV !== 'production') DOM.append(element, DOM.document.createComment(`<MountPoint name="${node.n}"${node.t && ' type="list"' || ''}>`))
 			DOM.append(element, anchor)
-			if (process.env.NODE_ENV !== 'production') DOM.append(element, DOM.document.createComment(`EF MOUNTING POINT '${node.n}' END`))
+			if (process.env.NODE_ENV !== 'production') DOM.append(element, DOM.document.createComment('</MountPoint>'))
 			break
 		}
 		default:
@@ -212,7 +213,7 @@ const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) 
 
 	// First create an element according to the description
 	const element = createElement({info, ctx, innerData, refs, handlers, subscribers, namespace, fragment, custom})
-	if (fragment && process.env.NODE_ENV !== 'production') element.append(DOM.document.createComment('EF FRAGMENT START'))
+	if (fragment && process.env.NODE_ENV !== 'production') element.append(DOM.document.createComment('<Fragment>'))
 
 	// Leave SVG mode if tag is `foreignObject`
 	if (namespace && namespace === svgNS && ['foreignobject', 'desc', 'title'].indexOf(tagName.toLowerCase()) > -1) namespace = ''
@@ -225,9 +226,13 @@ const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) 
 		if (node instanceof shared.EFBaseComponent) node.$mount({target: element})
 		else resolveAST({node, nodeType: typeOf(node), element, ctx, innerData, refs, handlers, subscribers, namespace, create})
 	}
-	if (fragment && process.env.NODE_ENV !== 'production') element.append(DOM.document.createComment('EF FRAGMENT END'))
+	if (fragment && process.env.NODE_ENV !== 'production') element.append(DOM.document.createComment('</Fragment>'))
+
+	astStore.set(element, node)
 
 	return element
 }
 
-export {create, nullComponent, checkDestroyed, applyMountingPoint}
+const getNodeAST = node => astStore.get(node)
+
+export {create, nullComponent, checkDestroyed, applyMountingPoint, getNodeAST}

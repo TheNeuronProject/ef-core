@@ -94,7 +94,7 @@ const EFBaseComponent = class {
 		const safeZone = DOM.document.createDocumentFragment()
 
 		if (process.env.NODE_ENV === 'production') nodeInfo.placeholder = DOM.document.createTextNode('')
-		else nodeInfo.placeholder = DOM.document.createComment('EF COMPONENT PLACEHOLDER')
+		else nodeInfo.placeholder = DOM.document.createComment(`<${this.constructor.name}/>`)
 
 		if (DOM.textNodeSupportsEvent) nodeInfo.eventBus = nodeInfo.placeholder
 		else nodeInfo.eventBus = document.createElement('i')
@@ -108,10 +108,11 @@ const EFBaseComponent = class {
 		}
 
 		const ctx = {
-			scope, mount, refs, data, innerData, methods,
+			ast, scope, mount, refs, data, innerData, methods,
 			handlers, subscribers, nodeInfo, safeZone,
 			children, state: this, isFragment: ast[0].t === 0,
-			localNamespaces: this.constructor.__local_namespaces
+			localNamespaces: this.constructor.__local_namespaces,
+			self: this, constructor: this.constructor
 		}
 
 		Object.defineProperty(this, '$ctx', {
@@ -337,7 +338,7 @@ const EFBaseComponent = class {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		if (typeof options === 'boolean') options = {capture: options}
 		options = assign({mode: 'DOM'}, options)
-		return this.$ctx.nodeInfo.eventBus.removeEventListener(eventName, handler, assign({mode: 'DOM'}, options))
+		return this.$ctx.nodeInfo.eventBus.removeEventListener(eventName, handler, options)
 	}
 
 	/**
