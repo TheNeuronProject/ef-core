@@ -32,7 +32,7 @@ this is a comment
 	'.' stands for text nodes
 	.Name: {{name}}&nJob: {{job}}
 	>br
-	'-' stands for standard mounting point
+	'-' stands for standard mount point
 	-node1
 	'.' after a tag name stands for class names for this tag
 	>p.some.{{binding.class}}.class.names
@@ -42,5 +42,5 @@ this is a comment
 			.Notice: {{notice}}
 		.some text
 		-node2
-		'+' stands for list mounting point
+		'+' stands for list mount point
 		+list1

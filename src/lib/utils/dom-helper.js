@@ -7,11 +7,11 @@ import dbg from './debug.js'
 import isBrowser from './is-browser.js'
 import ARR from './array-helper.js'
 import {inform, exec} from '../render-queue.js'
+import mountOptions from '../../mount-options.js'
 
 import shared from './global-shared.js'
 
-// Will require a weakmap polyfill for IE10 and below
-const mountingPointStore = new WeakMap()
+const EFMountPoint = '__ef_mount_point__'
 
 const DOM = {}
 
@@ -22,12 +22,16 @@ const EFFragment = class {
 	}
 
 	append(...args) {
-		DOM.append.apply(null, prepareArgs(args, this.$safeZone))
+		DOM.append(this.$safeZone, ...prepareArgs(args))
 		return this.$children.push(...args)
 	}
 
 	appendTo(node) {
-		DOM.append.apply(null, prepareArgs(this.$children, node))
+		DOM.append(node, ...prepareArgs(this.$children))
+	}
+
+	addBefore(node) {
+		DOM.before(node, ...prepareArgs(this.$children))
 	}
 
 	removeChild(node) {
@@ -40,97 +44,80 @@ const EFFragment = class {
 	}
 }
 
-const appendNode = (node, tempFragment) => {
+const appendNode = (node, target) => {
 	const {element, placeholder} = node.$ctx.nodeInfo
-	DOM.append(tempFragment, element, placeholder)
+	DOM.append(target, element, placeholder)
 }
 
-const handleMountingPoint = (element, tempFragment) => {
+const handleMountPoint = (element, target) => {
 	if (element.nodeType !== 3) return
 
-	const mountingPoint = mountingPointStore.get(element)
-	if (!mountingPoint) return
+	const mountPoint = element[EFMountPoint]
+	if (!mountPoint) return
 
-	const {node} = mountingPoint
+	const {node} = mountPoint
 	if (!node) return
+
 	if (ARR.isArray(node)) {
-		for (let i of node) appendNode(i, tempFragment)
-	} else appendNode(node, tempFragment)
+		for (let i of node) appendNode(i, target)
+	} else appendNode(node, target)
+}
+
+const appendToTarget = (target, nodes) => {
+	for (let i of nodes) {
+		if (DOM.isNodeInstance(i)) {
+			target.appendChild(i)
+			handleMountPoint(i, target)
+		} else if (isInstance(i, EFFragment)) i.appendTo(target)
+		else if (i instanceof shared.EFBaseComponent) {
+			i.$mount({target})
+		}
+	}
+}
+
+const addBeforeTarget = (target, nodes) => {
+	for (let i of nodes) {
+		if (DOM.isNodeInstance(i)) {
+			target.parentNode.insertBefore(i, target)
+			handleMountPoint(i, target.parentNode)
+		} else if (isInstance(i, EFFragment)) i.addBefore(target)
+		else if (i instanceof shared.EFBaseComponent) {
+			i.$mount({target, option: mountOptions.BEFORE})
+		}
+	}
 }
 
 DOM.isNodeInstance = (node) => {
 	if (DOM.isNode) return DOM.isNode(node)
-	return node instanceof DOM.Node
+	return !!(node && node.nodeType)
 }
 
 DOM.before = (node, ...nodes) => {
-	let child = null
-	if (nodes.length === 1 && DOM.isNodeInstance(node[0])) child = node[0]
-	else {
+	const parent = node.parentNode
+	if (nodes.length === 1 && DOM.isNodeInstance(nodes[0])) parent.insertBefore(nodes[0], node)
+	else if (parent.nodeType === 11) {
+		addBeforeTarget(node, nodes)
+	} else {
 		const tempFragment = DOM.document.createDocumentFragment()
-		inform()
-		for (let i of nodes) {
-			if (i instanceof shared.EFBaseComponent) {
-				i.$mount({target: tempFragment})
-			} else if (isInstance(i, EFFragment)) i.appendTo(tempFragment)
-			else {
-				tempFragment.appendChild(i)
-				handleMountingPoint(i, tempFragment)
-			}
-		}
-
-		child = tempFragment
+		appendToTarget(tempFragment, nodes)
+		parent.insertBefore(tempFragment, node)
 	}
-
-	node.parentNode.insertBefore(child, node)
-
-	exec()
 }
 
 DOM.after = (node, ...nodes) => {
-	let child = null
-	if (nodes.length === 1 && DOM.isNodeInstance(node[0])) child = node[0]
-	else {
-		const tempFragment = DOM.document.createDocumentFragment()
-		inform()
-		for (let i of nodes) {
-			if (i instanceof shared.EFBaseComponent) {
-				i.$mount({target: tempFragment})
-			} else if (isInstance(i, EFFragment)) i.appendTo(tempFragment)
-			else tempFragment.appendChild(i)
-		}
-
-		child = tempFragment
-	}
-
-	if (node.nextSibling) node.parentNode.insertBefore(child, node.nextSibling)
-	else node.parentNode.appendChild(child)
-
-	exec()
+	if (node.nextSibling) return DOM.before(node.nextSibling, ...nodes)
+	return DOM.append(node.parentNode, ...nodes)
 }
 
 DOM.append = (node, ...nodes) => {
 	if (DOM.isNodeInstance(node)) {
-		if ([1,9,11].indexOf(node.nodeType) === -1) return
-
-		let child = null
-		if (nodes.length === 1 && DOM.isNodeInstance(node[0])) child = node[0]
-		else {
+		if (nodes.length === 1 && DOM.isNodeInstance(nodes[0])) node.appendChild(nodes[0])
+		else if (node.nodeType === 11) appendToTarget(node, nodes)
+		else if (node.nodeType === 1 || node.nodeType === 9) {
 			const tempFragment = DOM.document.createDocumentFragment()
-			for (let i of nodes) {
-				if (isInstance(i, EFFragment)) i.appendTo(tempFragment)
-				else if (DOM.isNodeInstance(i)) {
-					tempFragment.appendChild(i)
-					handleMountingPoint(i, tempFragment)
-				} else if (i instanceof shared.EFBaseComponent) {
-					i.$mount({target: tempFragment})
-				}
-			}
-
-			child = tempFragment
+			appendToTarget(tempFragment, nodes)
+			node.appendChild(tempFragment)
 		}
-
-		node.appendChild(child)
 
 		return
 	}
@@ -157,82 +144,11 @@ DOM.append = (node, ...nodes) => {
 }
 
 DOM.remove = (node) => {
-	if (isInstance(node, EFFragment)) node.remove()
-	else if (node instanceof shared.EFBaseComponent) node.$umount()
-	else node.parentNode.removeChild(node)
+	if (DOM.isNodeInstance(node)) {
+		if (node.parentNode) node.parentNode.removeChild(node)
+	} else if (node instanceof shared.EFBaseComponent) node.$umount()
+	else if (isInstance(node, EFFragment)) node.remove()
 }
-
-// addClass(node, className) {
-// 	const classes = className.split(' ')
-// 	node.classList.add(...classes)
-// },
-
-// removeClass(node, className) {
-// 	const classes = className.split(' ')
-// 	node.classList.remove(...classes)
-// },
-
-// toggleClass(node, className) {
-// 	const classes = className.split(' ')
-// 	const classArr = node.className.split(' ')
-// 	for (let i of classes) {
-// 		const classIndex = classArr.indexOf(i)
-// 		if (classIndex > -1) {
-// 			classArr.splice(classIndex, 1)
-// 		} else {
-// 			classArr.push(i)
-// 		}
-// 	}
-// 	node.className = classArr.join(' ').trim()
-// },
-
-// replaceWith(node, newNode) {
-// 	const parent = node.parentNode
-// 	if (parent) parent.replaceChild(newNode, node)
-// },
-
-// swap(node, newNode) {
-// 	const nodeParent = node.parentNode
-// 	const newNodeParent = newNode.parentNode
-// 	const nodeSibling = node.nextSibling
-// 	const newNodeSibling = newNode.nextSibling
-// 	if (nodeParent && newNodeParent) {
-// 		nodeParent.insertBefore(newNode, nodeSibling)
-// 		newNodeParent.insertBefore(node, newNodeSibling)
-// 	}
-// },
-
-// prepend(node, ...nodes) {
-// 	if ([1,9,11].indexOf(node.nodeType) === -1) {
-// 		return
-// 	}
-// 	const tempFragment = DOM.document.createDocumentFragment()
-// 	nodes.reverse()
-// 	for (let i of nodes) {
-// 		tempFragment.appendChild(i)
-// 	}
-// 	if (node.firstChild) {
-// 		node.insertBefore(tempFragment, node.firstChild)
-// 	} else {
-// 		node.appendChild(tempFragment)
-// 	}
-// },
-
-// appendTo(node, newNode) {
-// 	newNode.appendChild(node)
-// },
-
-// prependTo(node, newNode) {
-// 	if (newNode.firstChild) {
-// 		newNode.insertBefore(node, node.firstChild)
-// 	} else {
-// 		newNode.appendChild(node)
-// 	}
-// },
-
-// empty(node) {
-// 	node.innerHTML = ''
-// },
 
 const setDOMImpl = (impl) => {
 	assign(DOM, impl)
@@ -266,4 +182,4 @@ const setDOMImpl = (impl) => {
 
 if (isBrowser) setDOMImpl({document, Node})
 
-export {DOM, EFFragment, mountingPointStore, setDOMImpl}
+export {DOM, EFFragment, EFMountPoint, setDOMImpl}

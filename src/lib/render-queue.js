@@ -1,13 +1,65 @@
-import ARR from './utils/array-helper.js'
-
-const modificationQueue = []
-const domQueue = []
 const userQueue = []
 let count = 0
 
-const queue = handlers => modificationQueue.push(...handlers)
-const queueDom = handler => domQueue.push(handler)
+const modificationQueue = {
+	first: null,
+	last: null
+}
+
+const domQueue = {
+	first: null,
+	last: null
+}
+
+// const queue = handlers => modificationQueue.push(...handlers)
 const onNextRender = handler => userQueue.push(handler)
+
+const addQueue = (ctx, handler) => {
+	if (handler === ctx.last) return
+
+	if (handler.__next) {
+		handler.__next.__prev = handler.__prev
+		if (handler.__prev) handler.__prev.__next = handler.__next
+	}
+
+	if (ctx.first) {
+		if (handler === ctx.first && handler.__next) ctx.first = handler.__next
+	} else ctx.first = handler
+
+	if (ctx.last) {
+		ctx.last.__next = handler
+		handler.__prev = ctx.last
+		handler.__next = null
+	}
+
+	ctx.last = handler
+}
+
+const runQueue = (ctx) => {
+	let currentFn = ctx.first
+	if (!currentFn) return
+
+	ctx.first = null
+	ctx.last = null
+
+	while (currentFn) {
+		currentFn()
+		const nextCall = currentFn.__next
+		currentFn.__prev = null
+		currentFn.__next = null
+		currentFn = nextCall
+	}
+}
+
+const queue = (handlers) => {
+	for (let i of handlers) {
+		addQueue(modificationQueue, i)
+	}
+}
+
+const queueDom = (handler) => {
+	addQueue(domQueue, handler)
+}
 
 /**
  * @returns {boolean} - Is render paused
@@ -24,25 +76,8 @@ const inform = () => {
 	return count
 }
 
-const execModifications = () => {
-	if (modificationQueue.length === 0) return
-	const renderQueue = ARR.unique(modificationQueue)
-	ARR.empty(modificationQueue)
-	for (let i of renderQueue) i()
-}
-
-const execDomModifications = () => {
-	if (domQueue.length === 0) return
-	const domRenderQueue = ARR.rightUnique(domQueue)
-	ARR.empty(domQueue)
-	for (let i of domRenderQueue) i()
-}
-
 const execUserQueue = () => {
-	if (userQueue.length === 0) return
-	const userFnQueue = ARR.unique(userQueue)
-	ARR.empty(userQueue)
-	for (let i of userFnQueue) i()
+	for (let i of userQueue) i()
 }
 
 /**
@@ -55,9 +90,8 @@ const exec = (immediate) => {
 	if (!immediate && (count -= 1) > 0) return count
 	count = 0
 
-	if (modificationQueue.length > 0) execModifications()
-
-	if (domQueue.length > 0) execDomModifications()
+	runQueue(modificationQueue)
+	runQueue(domQueue)
 
 	// Execute user queue after DOM update
 	if (userQueue.length > 0) setTimeout(execUserQueue, 0)

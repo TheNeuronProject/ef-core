@@ -34,14 +34,6 @@ const ARR = {
 	reverse(arr) {
 		return proto.reverse.call(arr)
 	},
-	rightUnique(arr) {
-		const newArr = []
-		for (let i = 0; i < arr.length; i++) {
-			for (let j = i + 1; j < arr.length; j++) if (arr[i] === arr[j]) j = i += 1
-			newArr.push(arr[i])
-		}
-		return newArr
-	},
 	shift(arr) {
 		return proto.shift.call(arr)
 	},
@@ -61,8 +53,5 @@ const ARR = {
 		return SavedArray.isArray(arr)
 	}
 }
-
-if (typeof Set !== 'undefined' && SavedArray.from) ARR.unique = arr => SavedArray.from(new Set(arr))
-else ARR.unique = ARR.rightUnique
 
 export default ARR

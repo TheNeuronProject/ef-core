@@ -1,6 +1,6 @@
 import {createElement, typeValid} from './element-creator.js'
 import {queue, inform, exec} from './render-queue.js'
-import {DOM, mountingPointStore} from './utils/dom-helper.js'
+import {DOM, EFMountPoint} from './utils/dom-helper.js'
 import {getNamespace} from './utils/namespaces.js'
 import defineArr from './utils/dom-arr-helper.js'
 import ARR from './utils/array-helper.js'
@@ -15,7 +15,6 @@ const mathNS = getNamespace('math')
 const htmlNS = getNamespace('html')
 
 const nullComponent = Object.create(null)
-const astStore = new WeakMap()
 
 const checkDestroyed = (state) => {
 	if (!state.$ctx) throw new Error('[EF] This component has been destroyed!')
@@ -40,7 +39,7 @@ const bindTextNode = ({node, ctx, handlers, subscribers, innerData, element}) =>
 	DOM.append(element, textNode)
 }
 
-const updateMountingNode = ({ctx, key, value}) => {
+const updateMountNode = ({ctx, key, value}) => {
 	const {children} = ctx
 	const child = children[key]
 	const {anchor, node} = child
@@ -60,7 +59,7 @@ const updateMountingNode = ({ctx, key, value}) => {
 	exec()
 }
 
-const updateMountingList = ({ctx, key, value}) => {
+const updateMountList = ({ctx, key, value}) => {
 	const {children} = ctx
 	const {anchor, node} = children[key]
 	if (ARR.equals(node, value)) return
@@ -86,12 +85,12 @@ const updateMountingList = ({ctx, key, value}) => {
 	exec()
 }
 
-const mountingPointUpdaters = [
-	updateMountingNode,
-	updateMountingList
+const mountPointUpdaters = [
+	updateMountNode,
+	updateMountList
 ]
 
-const applyMountingPoint = (type, key, tpl) => {
+const applyMountPoint = (type, key, tpl) => {
 	Object.defineProperty(tpl.prototype, key, {
 		get() {
 			if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
@@ -100,26 +99,26 @@ const applyMountingPoint = (type, key, tpl) => {
 		set(value) {
 			if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 			const ctx = this.$ctx
-			mountingPointUpdaters[type]({ctx, key, value})
+			mountPointUpdaters[type]({ctx, key, value})
 		},
 		enumerable: true
 	})
 }
 
-const bindMountingNode = ({ctx, key, anchor}) => {
+const bindMountNode = ({ctx, key, anchor}) => {
 	const {children, isFragment} = ctx
 	children[key] = {anchor}
-	mountingPointStore.set(anchor, children[key])
+	anchor[EFMountPoint] = children[key]
 	if (isFragment) DOM.append(ctx.safeZone, anchor)
 }
 
-const bindMountingList = ({ctx, key, anchor}) => {
+const bindMountList = ({ctx, key, anchor}) => {
 	const {children, isFragment} = ctx
 	children[key] = {
 		node: defineArr([], {ctx, key, anchor}),
 		anchor
 	}
-	mountingPointStore.set(anchor, children[key])
+	anchor[EFMountPoint] = children[key]
 	if (isFragment) DOM.append(ctx.safeZone, anchor)
 }
 
@@ -129,6 +128,7 @@ const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, su
 		DOM.append(element, node)
 		return
 	}
+
 	switch (nodeType) {
 		// Static text node
 		case 'string': {
@@ -143,13 +143,13 @@ const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, su
 			else bindTextNode({node, ctx, handlers, subscribers, innerData, element})
 			break
 		}
-		// Mounting points
+		// Mount points
 		case 'object': {
 			const anchor = DOM.document.createTextNode('')
-			// Single node mounting point
-			if (node.t === 0) bindMountingNode({ctx, key: node.n, anchor})
-			// Multi node mounting point
-			else bindMountingList({ctx, key: node.n, anchor})
+			// Single node mount point
+			if (node.t === 0) bindMountNode({ctx, key: node.n, anchor})
+			// Multi node mount point
+			else bindMountList({ctx, key: node.n, anchor})
 			// Append anchor
 			if (process.env.NODE_ENV !== 'production') DOM.append(element, DOM.document.createComment(`<MountPoint name="${node.n}"${node.t && ' type="list"' || ''}>`))
 			DOM.append(element, anchor)
@@ -228,11 +228,7 @@ const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) 
 	}
 	if (fragment && process.env.NODE_ENV !== 'production') element.append(DOM.document.createComment('</Fragment>'))
 
-	astStore.set(element, node)
-
 	return element
 }
 
-const getNodeAST = node => astStore.get(node)
-
-export {create, nullComponent, checkDestroyed, applyMountingPoint, getNodeAST}
+export {create, nullComponent, checkDestroyed, applyMountPoint}

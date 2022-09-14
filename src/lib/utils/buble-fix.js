@@ -7,9 +7,8 @@ const enumerableFalse = (classObj, keys) => {
 }
 
 // https://github.com/bublejs/buble/issues/131
-const prepareArgs = (self, node) => {
+const prepareArgs = (self) => {
 	const args = ARR.copy(self)
-	ARR.unshift(args, node)
 	return args
 }
 
