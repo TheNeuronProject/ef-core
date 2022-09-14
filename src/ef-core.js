@@ -1,6 +1,6 @@
 // Import everything
 import {EFBaseComponent, EFNodeWrapper, EFTextFragment, Fragment, toEFComponent} from './lib/renderer.js'
-import {applyMountingPoint, getNodeAST} from './lib/creator.js'
+import {applyMountPoint} from './lib/creator.js'
 import mountOptions from './mount-options.js'
 import createElement from './lib/jsx-create-element.js'
 import mapAttrs from './lib/map-attrs.js'
@@ -33,8 +33,8 @@ const initComponent = (component, node) => {
 			break
 		}
 		case 'object': {
-			if (node.t > 1) throw new TypeError(`[EF] Not a standard ef.js AST: Unknown mounting point type '${node.t}'`)
-			applyMountingPoint(node.t, node.n, component)
+			if (node.t > 1) throw new TypeError(`[EF] Not a standard ef.js AST: Unknown mount point type '${node.t}'`)
+			applyMountPoint(node.t, node.n, component)
 			break
 		}
 		case 'string': {
@@ -99,7 +99,7 @@ const create = (ast) => {
 	return EFComponent
 }
 
-let coreVersion = '0.15.1'
+let coreVersion = '0.15.2'
 
 if (process.env.NODE_ENV !== 'production') {
 	coreVersion = `${coreVersion}+debug`
@@ -121,7 +121,6 @@ export {
 	isPaused,
 	mountOptions,
 	setDOMImpl,
-	getNodeAST,
 	declareNamespace,
 	coreVersion as version
 }

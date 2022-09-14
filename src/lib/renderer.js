@@ -3,7 +3,7 @@ import initBinding from './binding.js'
 import {queueDom, inform, exec} from './render-queue.js'
 import {resolveSubscriber} from './resolver.js'
 import mapAttrs from './map-attrs.js'
-import {DOM, EFFragment, mountingPointStore} from './utils/dom-helper.js'
+import {DOM, EFFragment, EFMountPoint} from './utils/dom-helper.js'
 import ARR from './utils/array-helper.js'
 import {assign, legacyAssign} from './utils/polyfills.js'
 import isInstance from './utils/fast-instance-of.js'
@@ -87,10 +87,8 @@ const EFBaseComponent = class {
 			key: null
 		}
 
-		/* Detatched components will be put in the safe zone.
-		 * Split safe zone to each component in order to make
-		 * the component memory recycleable when lost reference
-		 */
+		const isFragment = ast[0].t === 0
+
 		const safeZone = DOM.document.createDocumentFragment()
 
 		if (process.env.NODE_ENV === 'production') nodeInfo.placeholder = DOM.document.createTextNode('')
@@ -100,7 +98,7 @@ const EFBaseComponent = class {
 		else nodeInfo.eventBus = document.createElement('i')
 
 		const mount = () => {
-			if (nodeInfo.replace.length > 0) {
+			if (nodeInfo.replace.length) {
 				for (let i of nodeInfo.replace) DOM.remove(i)
 				ARR.empty(nodeInfo.replace)
 			}
@@ -110,7 +108,7 @@ const EFBaseComponent = class {
 		const ctx = {
 			ast, scope, mount, refs, data, innerData, methods,
 			handlers, subscribers, nodeInfo, safeZone,
-			children, state: this, isFragment: ast[0].t === 0,
+			children, state: this, isFragment,
 			localNamespaces: this.constructor.__local_namespaces,
 			self: this, constructor: this.constructor
 		}
@@ -174,7 +172,7 @@ const EFBaseComponent = class {
 		inform()
 		if (nodeInfo.parent) {
 			this.$umount()
-			if (process.env.NODE_ENV !== 'production') dbg.warn('Component detached from previous mounting point.')
+			if (process.env.NODE_ENV !== 'production') dbg.warn('Component detached from previous mount point.')
 		}
 
 		if (!parent) parent = target
@@ -213,11 +211,12 @@ const EFBaseComponent = class {
 	}
 
 	/**
+	 * @param {boolean} destroy - Set true to skip DOM operations
 	 * @returns {number} - Render count down
 	 */
-	$umount() {
+	$umount(destroy) {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
-		const { nodeInfo, safeZone, mount } = this.$ctx
+		const { nodeInfo, mount, safeZone } = this.$ctx
 		const { parent, key } = nodeInfo
 		nodeInfo.parent = null
 		nodeInfo.key = null
@@ -227,15 +226,17 @@ const EFBaseComponent = class {
 			if (key !== '__DIRECTMOUNT__') {
 				if (parent[key]) {
 					if (ARR.isArray(parent[key])) {
-						// Remove self from parent list mounting point
+						// Remove self from parent list mount point
 						ARR.remove(parent[key], this)
 					} else parent[key] = nullComponent
 				}
 			// Else Remove elements from fragment parent
 			} else if (isInstance(parent, EFFragment)) parent.$ctx.nodeInfo.element.removeChild(nodeInfo.element)
 		}
-		DOM.append(safeZone, nodeInfo.placeholder)
-		queueDom(mount)
+		if (!destroy) {
+			DOM.append(safeZone, nodeInfo.placeholder)
+			queueDom(mount)
+		}
 		return exec()
 	}
 
@@ -350,7 +351,7 @@ const EFBaseComponent = class {
 		const { nodeInfo, children } = this.$ctx
 		inform()
 		this.$umount()
-		for (let i in children) mountingPointStore.delete(children[i].anchor)
+		for (let i in children) children[i].anchor[EFMountPoint] = null
 		// Detatch all mounted components
 		for (let i in this) {
 			if (typeOf(this[i]) === 'array') this[i].clear()
@@ -392,10 +393,12 @@ const EFNodeWrapper = class extends EFBaseComponent {
 		super(fragmentAST)
 
 		const element = this.$ctx.nodeInfo.element
-		const childrenArr = element.$children
 		element.append(...nodes)
 
-		if (process.env.NODE_ENV !== 'production') element.append(ARR.remove(childrenArr, childrenArr[1]))
+		if (process.env.NODE_ENV !== 'production') {
+			const childrenArr = element.$children
+			element.append(ARR.remove(childrenArr, childrenArr[1]))
+		}
 
 		this.$ctx.elements = nodes
 	}
@@ -417,7 +420,7 @@ const Fragment = class extends EFBaseComponent {
 	}
 }
 
-const textFragmentAst = [{t: 0},[['text']]]
+const textFragmentAst = [{t: 0},[['t']]]
 
 /**
  * ef component text wrapper
@@ -435,7 +438,7 @@ const EFTextFragment = class extends EFBaseComponent {
 	constructor(text) {
 		inform()
 		super(textFragmentAst)
-		this.text = text
+		this.t = text
 		exec()
 	}
 }

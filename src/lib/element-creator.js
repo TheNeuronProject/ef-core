@@ -105,7 +105,7 @@ const applyEventListener = ({element, custom, handler, trigger: {l, s, i, p, h, 
 
 	let baseEventHandler = (event) => {
 		handleStopOptions(event)
-		if (p) event.preventDefault()
+		if (p && !e) event.preventDefault()
 		handler(event)
 	}
 
