@@ -94,8 +94,10 @@ DOM.isNodeInstance = (node) => {
 
 DOM.before = (node, ...nodes) => {
 	const parent = node.parentNode
-	if (nodes.length === 1 && DOM.isNodeInstance(nodes[0])) parent.insertBefore(nodes[0], node)
-	else if (parent.nodeType === 11) {
+	if (nodes.length === 1 && DOM.isNodeInstance(nodes[0])) {
+		parent.insertBefore(nodes[0], node)
+		handleMountPoint(nodes[0], parent)
+	} else if (parent.nodeType === 11) {
 		addBeforeTarget(node, nodes)
 	} else {
 		const tempFragment = DOM.document.createDocumentFragment()
@@ -111,8 +113,10 @@ DOM.after = (node, ...nodes) => {
 
 DOM.append = (node, ...nodes) => {
 	if (DOM.isNodeInstance(node)) {
-		if (nodes.length === 1 && DOM.isNodeInstance(nodes[0])) node.appendChild(nodes[0])
-		else if (node.nodeType === 11) appendToTarget(node, nodes)
+		if (nodes.length === 1 && DOM.isNodeInstance(nodes[0])) {
+			node.appendChild(nodes[0])
+			handleMountPoint(nodes[0], node)
+		} else if (node.nodeType === 11) appendToTarget(node, nodes)
 		else if (node.nodeType === 1 || node.nodeType === 9) {
 			const tempFragment = DOM.document.createDocumentFragment()
 			appendToTarget(tempFragment, nodes)
