@@ -17,44 +17,44 @@ const onNextRender = handler => userQueue.push(handler)
 const addQueue = (ctx, handler) => {
 	if (handler === ctx.last) return
 
-	if (handler.__next) {
-		handler.__next.__prev = handler.__prev
-		if (handler.__prev) handler.__prev.__next = handler.__next
-	}
+	if (handler.__next) handler.__next.__prev = handler.__prev
+	if (handler.__prev) handler.__prev.__next = handler.__next
 
 	if (ctx.first) {
-		if (handler === ctx.first && handler.__next) ctx.first = handler.__next
+		if (handler === ctx.first) ctx.first = handler.__next
 	} else ctx.first = handler
 
 	if (ctx.last) {
 		ctx.last.__next = handler
 		handler.__prev = ctx.last
-		handler.__next = null
 	}
 
 	ctx.last = handler
+	ctx.first.__prev = null
+	ctx.last.__next = null
 }
 
 const runQueue = (ctx) => {
 	let currentFn = ctx.first
 	if (!currentFn) return
 
+	const queueArr = []
+	while (currentFn) {
+		const nextFn = currentFn.__next
+		currentFn.__prev = null
+		currentFn.__next = null
+		queueArr.push(currentFn)
+		currentFn = nextFn
+	}
+
 	ctx.first = null
 	ctx.last = null
 
-	while (currentFn) {
-		currentFn()
-		const nextCall = currentFn.__next
-		currentFn.__prev = null
-		currentFn.__next = null
-		currentFn = nextCall
-	}
+	for (let i of queueArr) i()
 }
 
 const queue = (handlers) => {
-	for (let i of handlers) {
-		addQueue(modificationQueue, i)
-	}
+	for (let i of handlers) addQueue(modificationQueue, i)
 }
 
 const queueDom = (handler) => {
