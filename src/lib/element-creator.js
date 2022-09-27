@@ -99,8 +99,7 @@ const applyEventListener = ({element, custom, handler, trigger: {l, s, i, p, h, 
 	}
 
 	let eventOptions = {
-		capture: !!u,
-		mode: 'DOM'
+		capture: !!u
 	}
 
 	let baseEventHandler = (event) => {
@@ -171,8 +170,7 @@ const addValListener = ({ctx, trigger, updateLock, handlers, subscribers, innerD
 	}
 
 	const eventOptions = {
-		capture: true,
-		mode: 'DOM'
+		capture: true
 	}
 
 	if (trigger) {
@@ -186,7 +184,7 @@ const addValListener = ({ctx, trigger, updateLock, handlers, subscribers, innerD
 		const dispatch = custom && '$dispatch' || 'dispatchEvent'
 		element[addListener]('change', () => {
 			// Trigger change to the element it-self
-			element[dispatch](getEvent('__ef_change_event__'), {bubbles: true, canceoable: false, mode: 'DOM'})
+			element[dispatch](getEvent('__ef_change_event__'), {bubbles: false, cancelable: false})
 			if (element.tagName === 'INPUT' && element.type === 'radio' && element.name !== '') {
 				// Trigger change to the the same named radios
 				const radios = DOM.document.querySelectorAll(`input[name=${element.name}][type=radio]`)
