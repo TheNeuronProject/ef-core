@@ -104,7 +104,7 @@ let coreVersion = '0.15.6'
 if (process.env.NODE_ENV !== 'production') {
 	coreVersion = `${coreVersion}+debug`
 
-	if (!window.devtoolsFormatters) window.devtoolsFormatters = []
+	if (!global.devtoolsFormatters) global.devtoolsFormatters = []
 
 	const shallowCloneObj = (obj, deletes) => {
 		const cloned = Object.create(null)
@@ -148,7 +148,7 @@ if (process.env.NODE_ENV !== 'production') {
 		}
 	}
 
-	window.devtoolsFormatters.push(formatter)
+	global.devtoolsFormatters.push(formatter)
 }
 
 export {
