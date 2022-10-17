@@ -104,51 +104,54 @@ let coreVersion = '0.15.6'
 if (process.env.NODE_ENV !== 'production') {
 	coreVersion = `${coreVersion}+debug`
 
-	if (!global.devtoolsFormatters) global.devtoolsFormatters = []
+	dbg.info(`ef-core v${coreVersion} initialized!`)
 
-	const shallowCloneObj = (obj, deletes) => {
-		const cloned = Object.create(null)
-		const descriptors = Object.getOwnPropertyDescriptors(obj)
-		if (deletes) {
-			for (let i of deletes) {
-				delete descriptors[i]
+	if (typeof globalThis !== 'undefined') {
+		if (!globalThis.devtoolsFormatters) globalThis.devtoolsFormatters = []
+
+		const shallowCloneObj = (obj, deletes) => {
+			const cloned = Object.create(null)
+			const descriptors = Object.getOwnPropertyDescriptors(obj)
+			if (deletes) {
+				for (let i of deletes) {
+					delete descriptors[i]
+				}
+			}
+			Object.defineProperties(cloned, descriptors)
+			return cloned
+		}
+
+		const formatter = {
+			header(obj, config) {
+				if (config && config.__raw) return null
+				if (obj instanceof EFBaseComponent) return ['div', {style: 'font-weight: bold; color: #5ccccc'}, `>${obj.constructor.name || 'anonymous'}`]
+				return null
+			},
+			hasBody() {
+				return true
+			},
+			body(obj) {
+				const mountPoints = Object.create(null)
+				for (let i in obj.$ctx.children) {
+					mountPoints[i] = obj.$ctx.children[i].node
+				}
+
+				const elements = [
+					['div', {style: 'color: #4bcb5b'}, '$data:           ', ['object', {object: shallowCloneObj(obj.$ctx.data)}]],
+					['div', {style: 'color: #4bcb5b'}, '$refs:           ', ['object', {object: shallowCloneObj(obj.$ctx.refs)}]],
+					['div', {style: 'color: #4bcb5b'}, '$methods:        ', ['object', {object: shallowCloneObj(obj.$ctx.methods)}]],
+					['div', {style: 'color: #4bcb5b'}, '[[mountpoints]]: ', ['object', {object: mountPoints}]],
+					['div', {style: 'color: #cc22bb'}, '[[props]]:       ', ['object', {object: shallowCloneObj(obj, ['$ctx'])}]],
+					['div', {style: 'color: #4bcb5b88'}, '[[element]]:     ', ['object', {object: obj.$ctx.nodeInfo.element}]],
+					['div', {style: 'color: #4bcb5b88'}, '[[parent]]:      ', ['object', {object: obj.$ctx.nodeInfo.parent}]],
+					['div', {style: 'color: #4bcb5b88'}, '[[slot]]:        ', ['object', {object: obj.$ctx.nodeInfo.key}]]
+				]
+				return ['div', {}, ...elements]
 			}
 		}
-		Object.defineProperties(cloned, descriptors)
-		return cloned
+
+		globalThis.devtoolsFormatters.push(formatter)
 	}
-
-	const formatter = {
-		header(obj, config) {
-			if (config && config.__raw) return null
-			if (obj instanceof EFBaseComponent) return ['div', {style: 'font-weight: bold; color: #6fffff'}, `>${obj.constructor.name || 'anonymous'}`]
-			return null
-		},
-		hasBody() {
-			return true
-		},
-		body(obj) {
-			const mountPoints = Object.create(null)
-			for (let i in obj.$ctx.children) {
-				mountPoints[i] = obj.$ctx.children[i].node
-			}
-
-			const elements = [
-				['div', {style: 'color: #5cdc6c'}, '$data:           ', ['object', {object: shallowCloneObj(obj.$ctx.data)}]],
-				['div', {style: 'color: #5cdc6c'}, '$refs:           ', ['object', {object: shallowCloneObj(obj.$ctx.refs)}]],
-				['div', {style: 'color: #5cdc6c'}, '$methods:        ', ['object', {object: shallowCloneObj(obj.$ctx.methods)}]],
-				['div', {style: 'color: #5cdc6c'}, '[[mountpoints]]: ', ['object', {object: mountPoints}]],
-				['div', {style: 'color: #ee44dd'}, '[[props]]:       ', ['object', {object: shallowCloneObj(obj, ['$ctx'])}]],
-				['div', {style: 'color: #199929'}, '[[element]]:     ', ['object', {object: obj.$ctx.nodeInfo.element}]],
-				['div', {style: 'color: #199929'}, '[[parent]]:      ', ['object', {object: obj.$ctx.nodeInfo.parent}]],
-				['div', {style: 'color: #199929'}, '[[slot]]:        ', ['object', {object: obj.$ctx.nodeInfo.key}]]
-			]
-
-			return ['div', {}, ...elements]
-		}
-	}
-
-	global.devtoolsFormatters.push(formatter)
 }
 
 export {
@@ -170,5 +173,3 @@ export {
 	declareNamespace,
 	coreVersion as version
 }
-
-if (process.env.NODE_ENV !== 'production') dbg.info(`ef-core v${coreVersion} initialized!`)
