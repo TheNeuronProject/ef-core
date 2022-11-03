@@ -4,7 +4,6 @@ import {resolvePath} from './resolver.js'
 import ARR from './utils/array-helper.js'
 import {DOM, EFFragment} from './utils/dom-helper.js'
 import getEvent from './utils/event-helper.js'
-import {mixVal} from './utils/literals-mix.js'
 import {getNamespace} from './utils/namespaces.js'
 
 
@@ -49,17 +48,45 @@ const getElement = ({tagName, tagContent, attrs, ref, refs, namespace}) => {
 	return element
 }
 
+const getVal = (dataNode, key) => {
+	const data = dataNode[key]
+	if (typeof data === 'undefined') return ''
+	return data
+}
+
 const regTmpl = ({val, ctx, handlers, subscribers, innerData, handler}) => {
 	if (ARR.isArray(val)) {
 		const [strs, ...exprs] = val
-		const tmpl = [strs]
 
-		const _handler = () => handler(mixVal(...tmpl))
+		if (!strs) {
+			const {dataNode, handlerNode, _key} = initBinding({bind: exprs[0], ctx, handlers, subscribers, innerData})
+			const _handler = () => handler(getVal(dataNode, _key))
+			handlerNode.push(_handler)
 
-		tmpl.push(...exprs.map((item) => {
+			return _handler
+		}
+
+		const tmpl = new Array(strs.length + exprs.length)
+		const evalList = []
+
+		for (let i in strs) {
+			tmpl[i * 2] = strs[i]
+		}
+
+		const _handler = () => {
+			for (let i of evalList) i()
+			return handler(''.concat(...tmpl))
+		}
+
+		evalList.push(...exprs.map((item, index) => {
 			const {dataNode, handlerNode, _key} = initBinding({bind: item, ctx, handlers, subscribers, innerData})
 			handlerNode.push(_handler)
-			return {dataNode, _key}
+
+			index = index * 2 + 1
+
+			return () => {
+				tmpl[index] = getVal(dataNode, _key)
+			}
 		}))
 
 		return _handler
