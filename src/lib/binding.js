@@ -4,7 +4,7 @@ import ARR from './utils/array-helper.js'
 import isnan from './utils/isnan.js'
 import dbg from './utils/debug.js'
 
-const initDataNode = ({parentNode, dataNode, handlerNode, subscriberNode, ctx, _key}) => {
+const initDataNode = (ctx, {parentNode, dataNode, handlerNode, subscriberNode, _key}) => {
 	let updatingInProgress = false
 	Object.defineProperty(parentNode, _key, {
 		get() {
@@ -37,13 +37,16 @@ const initDataNode = ({parentNode, dataNode, handlerNode, subscriberNode, ctx, _
 	})
 }
 
-const initBinding = ({bind, ctx, handlers, subscribers, innerData}) => {
+const initBinding = (ctx, {bind}) => {
 	const _path = ARR.copy(bind[0])
 	const _key = _path.pop()
+
+	const {data, handlers, subscribers, innerData} = ctx
+
 	const {parentNode, handlerNode, subscriberNode, dataNode} = resolve({
 		_path,
 		_key,
-		data: ctx.data,
+		data,
 		handlers,
 		subscribers,
 		innerData
@@ -51,7 +54,7 @@ const initBinding = ({bind, ctx, handlers, subscribers, innerData}) => {
 
 	// Initlize data binding node if not initialized
 	const keyStatus = Object.getOwnPropertyDescriptor(parentNode, _key)
-	if (!keyStatus || !(keyStatus.get || keyStatus.set)) initDataNode({parentNode, dataNode, handlerNode, subscriberNode, ctx, _key})
+	if (!keyStatus || !(keyStatus.get || keyStatus.set)) initDataNode(ctx, {parentNode, dataNode, handlerNode, subscriberNode, _key})
 	// Update default value
 	// bind[1] is the default value for this node
 	if (bind.length > 1) parentNode[_key] = bind[1]

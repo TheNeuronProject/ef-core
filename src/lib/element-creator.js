@@ -54,12 +54,12 @@ const getVal = (dataNode, key) => {
 	return data
 }
 
-const regTmpl = ({val, ctx, handlers, subscribers, innerData, handler}) => {
+const regTmpl = (ctx, {val, handler}) => {
 	if (ARR.isArray(val)) {
 		const [strs, ...exprs] = val
 
 		if (!strs) {
-			const {dataNode, handlerNode, _key} = initBinding({bind: exprs[0], ctx, handlers, subscribers, innerData})
+			const {dataNode, handlerNode, _key} = initBinding(ctx, {bind: exprs[0]})
 			const _handler = () => handler(getVal(dataNode, _key))
 			handlerNode.push(_handler)
 
@@ -79,7 +79,7 @@ const regTmpl = ({val, ctx, handlers, subscribers, innerData, handler}) => {
 		}
 
 		evalList.push(...exprs.map((item, index) => {
-			const {dataNode, handlerNode, _key} = initBinding({bind: item, ctx, handlers, subscribers, innerData})
+			const {dataNode, handlerNode, _key} = initBinding(ctx, {bind: item})
 			handlerNode.push(_handler)
 
 			index = index * 2 + 1
@@ -184,9 +184,9 @@ const applyEventListener = ({element, custom, handler, trigger: {l, s, i, p, h, 
 	element[addListener](l, eventHandler, eventOptions)
 }
 
-const addValListener = ({ctx, trigger, updateLock, handlers, subscribers, innerData, element, lastNode, key, expr, custom}) => {
+const addValListener = (ctx, {trigger, updateLock, element, lastNode, key, expr, custom}) => {
 	const addListener = custom && '$on' || 'addEventListener'
-	const {parentNode, _key} = initBinding({bind: expr, ctx, handlers, subscribers, innerData})
+	const {parentNode, _key} = initBinding(ctx, {bind: expr})
 
 	const handler = () => {
 		updateLock.locked = true
@@ -231,7 +231,7 @@ const addValListener = ({ctx, trigger, updateLock, handlers, subscribers, innerD
 	}
 }
 
-const getAttrHandler = ({element, key, custom, ctx}) => {
+const getAttrHandler = (ctx, {element, key, custom}) => {
 	// Pass directly to custom component
 	if (custom) return (val) => {
 		element[key] = val
@@ -263,7 +263,7 @@ const getAttrHandler = ({element, key, custom, ctx}) => {
 	}
 }
 
-const addAttr = ({element, attr, key, ctx, handlers, subscribers, innerData, custom}) => {
+const addAttr = (ctx, {element, attr, key, custom}) => {
 	if (typeValid(attr)) {
 		if (custom) {
 			if (attr === '') element[key] = true
@@ -280,11 +280,11 @@ const addAttr = ({element, attr, key, ctx, handlers, subscribers, innerData, cus
 		return element.setAttribute(key, attr)
 	}
 
-	const handler = getAttrHandler({element, key, custom, ctx})
-	queue([regTmpl({val: attr, ctx, handlers, subscribers, innerData, handler})])
+	const handler = getAttrHandler(ctx, {element, key, custom})
+	queue([regTmpl(ctx, {val: attr, handler})])
 }
 
-const addProp = ({element, propPath, value, trigger, updateOnly, ctx, handlers, subscribers, innerData, custom}) => {
+const addProp = (ctx, {element, propPath, value, trigger, updateOnly, custom}) => {
 	const keyPath = ARR.copy(propPath)
 	const lastKey = keyPath.pop()
 	if (custom) keyPath.unshift('$data')
@@ -302,24 +302,24 @@ const addProp = ({element, propPath, value, trigger, updateOnly, ctx, handlers, 
 		if (updateOnly) handler = () => {
 			updateLock.locked = false
 		}
-		const _handler = regTmpl({val: value, ctx, handlers, subscribers, innerData, handler})
+		const _handler = regTmpl(ctx, {val: value, handler})
 		if (trigger ||
 			(propPath.length === 1 && (lastKey === 'value' || lastKey === 'checked')) &&
-			!value[0]) addValListener({ctx, trigger, updateLock, handlers, subscribers, innerData, element, lastNode, key: lastKey, expr: value[1], custom})
+			!value[0]) addValListener(ctx, {trigger, updateLock, element, lastNode, key: lastKey, expr: value[1], custom})
 		queue([_handler])
 	}
 }
 
 const rawHandler = val => val
 
-const addEvent = ({element, trigger, ctx, handlers, subscribers, innerData, custom}) => {
+const addEvent = (ctx, {element, trigger, custom}) => {
 
 	/*
 	 *  m: method                   : string
 	 *  v: value                    : string/array/undefined
 	 */
 	const {m, v} = trigger
-	const _handler = regTmpl({val: v, ctx, handlers, subscribers, innerData, handler: rawHandler})
+	const _handler = regTmpl(ctx, {val: v, ctx, handler: rawHandler})
 
 	const callEventHandler = (event) => {
 		if (ctx.methods[m]) ctx.methods[m]({e: event, event, value: _handler(), state: ctx.state})
@@ -329,7 +329,7 @@ const addEvent = ({element, trigger, ctx, handlers, subscribers, innerData, cust
 	applyEventListener({element, custom, handler: callEventHandler, trigger})
 }
 
-const createElement = ({info, ctx, innerData, refs, handlers, subscribers, namespace, fragment, custom}) => {
+const createElement = (ctx, {info, namespace, fragment, custom}) => {
 	if (fragment) return new EFFragment()
 
 	/*
@@ -342,10 +342,10 @@ const createElement = ({info, ctx, innerData, refs, handlers, subscribers, names
 	const {t, a, p, e, r} = info
 	const tagName = t
 	const tagContent = ctx.scope[t] || t
-	const element = getElement({tagName, tagContent, attrs: a, ref: r, refs, namespace})
-	if (a) for (let key in a) addAttr({element, custom, attr: a[key], key, ctx, handlers, subscribers, innerData})
-	if (p) for (let [propPath, value, trigger, updateOnly] of p) addProp({element, custom, value, propPath, trigger, updateOnly, ctx, handlers, subscribers, innerData})
-	if (e) for (let trigger of e) addEvent({element, custom, trigger, ctx, handlers, subscribers, innerData})
+	const element = getElement({tagName, tagContent, attrs: a, ref: r, refs: ctx.refs, namespace})
+	if (a) for (let key in a) addAttr(ctx, {element, custom, attr: a[key], key})
+	if (p) for (let [propPath, value, trigger, updateOnly] of p) addProp(ctx, {element, custom, value, propPath, trigger, updateOnly})
+	if (e) for (let trigger of e) addEvent(ctx, {element, custom, trigger})
 
 	return element
 }

@@ -20,10 +20,10 @@ const checkDestroyed = (state) => {
 	if (!state.$ctx) throw new Error('[EF] This component has been destroyed!')
 }
 
-const bindTextNode = ({node, ctx, handlers, subscribers, innerData, element}) => {
+const bindTextNode = (ctx, {node, element}) => {
 	// Data binding text node
 	const textNode = DOM.document.createTextNode('')
-	const { dataNode, handlerNode, _key } = initBinding({bind: node, ctx, handlers, subscribers, innerData})
+	const { dataNode, handlerNode, _key } = initBinding(ctx, {bind: node})
 	const handler = () => {
 		const value = dataNode[_key]
 		if (typeof value === 'undefined') {
@@ -123,7 +123,7 @@ const bindMountList = ({ctx, key, anchor}) => {
 }
 
 // Walk through the AST to perform proper actions
-const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, subscribers, namespace, create}) => {
+const resolveAST = (ctx, {node, nodeType, element, namespace, create}) => {
 	if (DOM.isNodeInstance(node)) {
 		DOM.append(element, node)
 		return
@@ -138,9 +138,9 @@ const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, su
 		// Child element or a dynamic text node
 		case 'array': {
 			// Recursive call for child element
-			if (typeOf(node[0]) === 'object') DOM.append(element, create({node, ctx, innerData, refs, handlers, subscribers, namespace}))
+			if (typeOf(node[0]) === 'object') DOM.append(element, create(ctx, {node, namespace}))
 			// Dynamic text node
-			else bindTextNode({node, ctx, handlers, subscribers, innerData, element})
+			else bindTextNode(ctx, {node, element})
 			break
 		}
 		// Mount points
@@ -162,7 +162,7 @@ const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, su
 
 // Create elements based on description from AST
 /* eslint {"complexity": "off"} */
-const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) => {
+const create = (ctx, {node, namespace}) => {
 	const [info, ...childNodes] = node
 	const previousNamespace = namespace
 
@@ -212,7 +212,7 @@ const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) 
 	if (namespace === htmlNS) namespace = ''
 
 	// First create an element according to the description
-	const element = createElement({info, ctx, innerData, refs, handlers, subscribers, namespace, fragment, custom})
+	const element = createElement(ctx, {info, fragment, custom})
 	if (fragment && process.env.NODE_ENV !== 'production') element.append(DOM.document.createComment('<Fragment>'))
 
 	// Leave SVG mode if tag is `foreignObject`
@@ -224,7 +224,7 @@ const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) 
 	// Append child nodes
 	for (let node of childNodes) {
 		if (node instanceof shared.EFBaseComponent) node.$mount({target: element})
-		else resolveAST({node, nodeType: typeOf(node), element, ctx, innerData, refs, handlers, subscribers, namespace, create})
+		else resolveAST(ctx, {node, nodeType: typeOf(node), element, namespace, create})
 	}
 	if (fragment && process.env.NODE_ENV !== 'production') element.append(DOM.document.createComment('</Fragment>'))
 
