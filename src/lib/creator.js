@@ -33,7 +33,7 @@ const bindTextNode = (ctx, {node, element}) => {
 		textNode.textContent = value
 	}
 	handlerNode.push(handler)
-	queue([handler])
+	queue(handler)
 
 	// Append element to the component
 	DOM.append(element, textNode)
@@ -212,8 +212,8 @@ const create = (ctx, {node, namespace}) => {
 	if (namespace === htmlNS) namespace = ''
 
 	// First create an element according to the description
-	const element = createElement(ctx, {info, fragment, custom})
-	if (fragment && process.env.NODE_ENV !== 'production') element.append(DOM.document.createComment('<Fragment>'))
+	const element = createElement(ctx, {info, namespace, fragment, custom})
+	if (fragment && process.env.NODE_ENV !== 'production') DOM.append(element, DOM.document.createComment('<Fragment>'))
 
 	// Leave SVG mode if tag is `foreignObject`
 	if (namespace && namespace === svgNS && ['foreignobject', 'desc', 'title'].indexOf(tagName.toLowerCase()) > -1) namespace = ''
@@ -226,7 +226,7 @@ const create = (ctx, {node, namespace}) => {
 		if (node instanceof shared.EFBaseComponent) node.$mount({target: element})
 		else resolveAST(ctx, {node, nodeType: typeOf(node), element, namespace, create})
 	}
-	if (fragment && process.env.NODE_ENV !== 'production') element.append(DOM.document.createComment('</Fragment>'))
+	if (fragment && process.env.NODE_ENV !== 'production') DOM.append(element, DOM.document.createComment('</Fragment>'))
 
 	return element
 }

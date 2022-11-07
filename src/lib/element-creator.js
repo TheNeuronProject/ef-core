@@ -181,7 +181,7 @@ const applyEventListener = ({element, custom, handler, trigger: {l, s, i, p, h, 
 	}
 
 	const addListener = custom && '$on' || 'addEventListener'
-	element[addListener](l, eventHandler, eventOptions)
+	queue(() => element[addListener](l, eventHandler, eventOptions))
 }
 
 const addValListener = (ctx, {trigger, updateLock, element, lastNode, key, expr, custom}) => {
@@ -204,30 +204,34 @@ const addValListener = (ctx, {trigger, updateLock, element, lastNode, key, expr,
 		applyEventListener({element, custom, handler, trigger})
 	} else if (key === 'value') {
 		// Listen to input, keyup and change events in order to work in most browsers.
-		element[addListener]('input', handler, eventOptions)
-		element[addListener]('keyup', handler, eventOptions)
-		element[addListener]('change', handler, eventOptions)
+		queue(() => {
+			element[addListener]('input', handler, eventOptions)
+			element[addListener]('keyup', handler, eventOptions)
+			element[addListener]('change', handler, eventOptions)
+		})
 	} else {
 		const dispatch = custom && '$dispatch' || 'dispatchEvent'
-		element[addListener]('change', () => {
-			// Trigger change to the element it-self
-			element[dispatch](getEvent('__ef_change_event__'), {bubbles: false, cancelable: false})
-			if (element.tagName === 'INPUT' && element.type === 'radio' && element.name !== '') {
-				// Trigger change to the the same named radios
-				const radios = DOM.document.querySelectorAll(`input[name=${element.name}][type=radio]`)
-				if (radios) {
-					const selected = ARR.copy(radios)
-					ARR.remove(selected, element)
+		queue(() => {
+			element[addListener]('change', () => {
+				// Trigger change to the element it-self
+				element[dispatch](getEvent('__ef_change_event__'), {bubbles: false, cancelable: false})
+				if (element.tagName === 'INPUT' && element.type === 'radio' && element.name !== '') {
+					// Trigger change to the the same named radios
+					const radios = DOM.document.querySelectorAll(`input[name=${element.name}][type=radio]`)
+					if (radios) {
+						const selected = ARR.copy(radios)
+						ARR.remove(selected, element)
 
-					/* Event triggering could cause unwanted render triggers
-					 * no better ways came up at the moment
-					 */
-					for (let i of selected) i.dispatchEvent(getEvent('__ef_change_event__'))
+						/* Event triggering could cause unwanted render triggers
+						 * no better ways came up at the moment
+						 */
+						for (let i of selected) i.dispatchEvent(getEvent('__ef_change_event__'))
+					}
 				}
-			}
-		}, eventOptions)
-		// Use custom event to avoid loops and conflicts
-		element[addListener]('__ef_change_event__', handler)
+			}, eventOptions)
+			// Use custom event to avoid loops and conflicts
+			element[addListener]('__ef_change_event__', handler)
+		})
 	}
 }
 
@@ -266,8 +270,12 @@ const getAttrHandler = (ctx, {element, key, custom}) => {
 const addAttr = (ctx, {element, attr, key, custom}) => {
 	if (typeValid(attr)) {
 		if (custom) {
-			if (attr === '') element[key] = true
-			else element[key] = attr
+			if (attr === '') {
+				element[key] = true
+			} else {
+				element[key] = attr
+			}
+
 			return
 		}
 		// Do not set or update `is` again
@@ -275,13 +283,16 @@ const addAttr = (ctx, {element, attr, key, custom}) => {
 		// Handle namespaces
 		if (key.indexOf(':') > -1) {
 			const [prefix] = key.split(':')
-			if (prefix !== 'xmlns') return element.setAttributeNS(ctx.localNamespaces[prefix] || getNamespace(prefix), key, attr)
+			if (prefix !== 'xmlns') {
+				const ns = ctx.localNamespaces[prefix] || getNamespace(prefix)
+				return queue(() => element.setAttributeNS(ns, key, attr))
+			}
 		}
-		return element.setAttribute(key, attr)
+		return queue(() => element.setAttribute(key, attr))
 	}
 
 	const handler = getAttrHandler(ctx, {element, key, custom})
-	queue([regTmpl(ctx, {val: attr, handler})])
+	queue(regTmpl(ctx, {val: attr, handler}))
 }
 
 const addProp = (ctx, {element, propPath, value, trigger, updateOnly, custom}) => {
@@ -306,7 +317,7 @@ const addProp = (ctx, {element, propPath, value, trigger, updateOnly, custom}) =
 		if (trigger ||
 			(propPath.length === 1 && (lastKey === 'value' || lastKey === 'checked')) &&
 			!value[0]) addValListener(ctx, {trigger, updateLock, element, lastNode, key: lastKey, expr: value[1], custom})
-		queue([_handler])
+		queue(_handler)
 	}
 }
 

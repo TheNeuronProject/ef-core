@@ -20,7 +20,7 @@ const initDataNode = (ctx, {parentNode, dataNode, handlerNode, subscriberNode, _
 			}
 			dataNode[_key] = value
 			inform()
-			queue(handlerNode)
+			queue(...handlerNode)
 			exec()
 			if (subscriberNode.length > 0) {
 				inform()

@@ -243,7 +243,7 @@ state2.$methods.sendMsg = function (info) {
 	console.time('Create')
 	for (var i = 0; i < count; i++) states.push(new module1())
 	state4.list1.push.apply(state4.list1, states)
-	// ef.exec()
+	ef.exec()
 	console.timeEnd('Create')
 	var endTime = Date.now()
 	var time = endTime - startTime
@@ -251,7 +251,7 @@ state2.$methods.sendMsg = function (info) {
 	info.state.$data.text = msg
 	console.log(msg)
 	// states = []
-	// ef.inform()
+	ef.inform()
 	startTime = Date.now()
 	console.time('Destroy')
 	for (var i = 0; i < states.length; i++) {
