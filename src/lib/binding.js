@@ -5,33 +5,36 @@ import isnan from './utils/isnan.js'
 import dbg from './utils/debug.js'
 
 const initDataNode = (ctx, {parentNode, dataNode, handlerNode, subscriberNode, _key}) => {
-	let updatingInProgress = false
+	const { state } = ctx
+	let updateInProgress = false
 	Object.defineProperty(parentNode, _key, {
 		get() {
 			return dataNode[_key]
 		},
 		set(value) {
-			if (updatingInProgress) return
-			updatingInProgress = true
+			const oldValue = dataNode[_key]
 			// Comparing NaN is like eating a cake and suddenly encounter a grain of sand
-			if (dataNode[_key] === value || (isnan(dataNode[_key]) && isnan(value))) {
-				updatingInProgress = false
-				return
-			}
+			if (updateInProgress || oldValue === value || (isnan(oldValue) && isnan(value))) return
+
+			updateInProgress = true
+
 			dataNode[_key] = value
+
 			inform()
+
 			queue(...handlerNode)
-			exec()
+
 			if (subscriberNode.length > 0) {
-				inform()
 				try {
-					for (const subscriber of subscriberNode) subscriber({state: ctx.state, value})
+					for (const subscriber of subscriberNode) subscriber({state, value, oldValue})
 				} catch (e) {
 					dbg.error('Error caught when executing subscribers:\n', e)
 				}
-				exec()
 			}
-			updatingInProgress = false
+
+			exec()
+
+			updateInProgress = false
 		},
 		enumerable: true
 	})
