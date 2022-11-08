@@ -15,6 +15,17 @@ const EFMountPoint = '__ef_mount_point__'
 
 const DOM = {}
 
+const DocumentFragmentCache = []
+
+const useFragment = (cb) => {
+	const fragment = DocumentFragmentCache.pop() || DOM.document.createDocumentFragment()
+	inform()
+	// eslint-disable-next-line callback-return
+	cb(fragment)
+	DocumentFragmentCache.push(fragment)
+	exec()
+}
+
 const EFFragment = class {
 	constructor() {
 		this.$children = []
@@ -58,12 +69,15 @@ const handleMountPoint = (element, target) => {
 	const {node} = mountPoint
 	if (!node) return
 
+	inform()
 	if (ARR.isArray(node)) {
 		for (let i of node) appendNode(i, target)
 	} else appendNode(node, target)
+	exec()
 }
 
 const appendToTarget = (target, nodes) => {
+	inform()
 	for (let i of nodes) {
 		if (DOM.isNodeInstance(i)) {
 			target.appendChild(i)
@@ -73,18 +87,22 @@ const appendToTarget = (target, nodes) => {
 			i.$mount({target})
 		}
 	}
+	exec()
 }
 
 const addBeforeTarget = (target, nodes) => {
+	const parentNode = target.parentNode
+	inform()
 	for (let i of nodes) {
 		if (DOM.isNodeInstance(i)) {
-			target.parentNode.insertBefore(i, target)
-			handleMountPoint(i, target.parentNode)
+			parentNode.insertBefore(i, target)
+			handleMountPoint(i, parentNode)
 		} else if (isInstance(i, EFFragment)) i.addBefore(target)
 		else if (i instanceof shared.EFBaseComponent) {
 			i.$mount({target, option: mountOptions.BEFORE})
 		}
 	}
+	exec()
 }
 
 DOM.isNodeInstance = (node) => {
@@ -94,15 +112,16 @@ DOM.isNodeInstance = (node) => {
 
 DOM.before = (node, ...nodes) => {
 	const parent = node.parentNode
-	if (nodes.length === 1 && DOM.isNodeInstance(nodes[0])) {
+	const firstNode = nodes[0]
+	if (nodes.length === 1 && DOM.isNodeInstance(firstNode) && firstNode.nodeType !== 3 && !firstNode[EFMountPoint]) {
 		parent.insertBefore(nodes[0], node)
-		handleMountPoint(nodes[0], parent)
 	} else if (parent.nodeType === 11) {
 		addBeforeTarget(node, nodes)
 	} else {
-		const tempFragment = DOM.document.createDocumentFragment()
-		appendToTarget(tempFragment, nodes)
-		parent.insertBefore(tempFragment, node)
+		useFragment((tempFragment) => {
+			appendToTarget(tempFragment, nodes)
+			parent.insertBefore(tempFragment, node)
+		})
 	}
 }
 
@@ -118,9 +137,10 @@ DOM.append = (node, ...nodes) => {
 			handleMountPoint(nodes[0], node)
 		} else if (node.nodeType === 11) appendToTarget(node, nodes)
 		else if (node.nodeType === 1 || node.nodeType === 9) {
-			const tempFragment = DOM.document.createDocumentFragment()
-			appendToTarget(tempFragment, nodes)
-			node.appendChild(tempFragment)
+			useFragment((tempFragment) => {
+				appendToTarget(tempFragment, nodes)
+				node.appendChild(tempFragment)
+			})
 		}
 
 		return
@@ -186,4 +206,4 @@ const setDOMImpl = (impl) => {
 
 if (isBrowser) setDOMImpl({document, Node})
 
-export {DOM, EFFragment, EFMountPoint, setDOMImpl}
+export {DOM, EFFragment, EFMountPoint, setDOMImpl, useFragment}

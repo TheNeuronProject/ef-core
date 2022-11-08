@@ -1,6 +1,6 @@
 import {createElement, typeValid} from './element-creator.js'
 import {queue, inform, exec} from './render-queue.js'
-import {DOM, EFMountPoint} from './utils/dom-helper.js'
+import {DOM, EFMountPoint, useFragment} from './utils/dom-helper.js'
 import {getNamespace} from './utils/namespaces.js'
 import defineArr from './utils/dom-arr-helper.js'
 import ARR from './utils/array-helper.js'
@@ -65,24 +65,25 @@ const updateMountList = ({ctx, key, value}) => {
 	if (ARR.equals(node, value)) return
 	if (value) value = ARR.copy(value)
 	else value = []
-	const fragment = DOM.document.createDocumentFragment()
-	// Update components
-	inform()
-	if (node) {
-		node.clear()
-		for (let item of value) {
-			item = shared.toEFComponent(item)
+	useFragment((fragment) => {
+		// Update components
+		inform()
+		if (node) {
+			node.clear()
+			for (let item of value) {
+				item = shared.toEFComponent(item)
 
-			if (item.$ctx.nodeInfo.parent) item.$umount()
-			DOM.append(fragment, item.$mount({parent: ctx.state, key}))
-		}
-	} else for (let item of value) DOM.append(fragment, item.$mount({parent: ctx.state, key}))
-	// Update stored value
-	node.length = 0
-	ARR.push(node, ...value)
-	// Append to current component
-	DOM.after(anchor, fragment)
-	exec()
+				if (item.$ctx.nodeInfo.parent) item.$umount()
+				DOM.append(fragment, item.$mount({parent: ctx.state, key}))
+			}
+		} else for (let item of value) DOM.append(fragment, item.$mount({parent: ctx.state, key}))
+		// Update stored value
+		node.length = 0
+		ARR.push(node, ...value)
+		// Append to current component
+		DOM.after(anchor, fragment)
+		exec()
+	})
 }
 
 const mountPointUpdaters = [
