@@ -1,6 +1,6 @@
 import {DOM} from './dom-helper.js'
 import ARR from './array-helper.js'
-import {inform, exec} from '../render-queue.js'
+import {queueDom, inform, exec} from '../render-queue.js'
 import shared from './global-shared.js'
 
 const DOMARR = {
@@ -42,12 +42,12 @@ const DOMARR = {
 		const tempArr = ARR.copy(this)
 		const elements = []
 		inform()
-		for (let i = tempArr.length - 1; i >= 0; i--) {
-			tempArr[i].$umount()
-			ARR.push(elements, tempArr[i].$mount({parent: ctx.state, key}))
+		queueDom(() => DOM.after(anchor, ...ARR.reverse(elements)))
+		for (let i of tempArr) {
+			i.$umount()
+			ARR.push(elements, i.$mount({parent: ctx.state, key}))
 		}
 		ARR.push(this, ...ARR.reverse(tempArr))
-		DOM.after(anchor, ...elements)
 		exec()
 		return this
 	},
