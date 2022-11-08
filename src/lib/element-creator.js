@@ -188,7 +188,7 @@ const applyEventListener = ({element, custom, handler, trigger: {l, s, i, p, h, 
 	}
 
 	const addListener = custom && '$on' || 'addEventListener'
-	queue(() => element[addListener](l, eventHandler, eventOptions))
+	element[addListener](l, eventHandler, eventOptions)
 }
 
 const addValListener = (ctx, {trigger, updateLock, element, lastNode, key, expr, custom}) => {
@@ -211,34 +211,30 @@ const addValListener = (ctx, {trigger, updateLock, element, lastNode, key, expr,
 		applyEventListener({element, custom, handler, trigger})
 	} else if (key === 'value') {
 		// Listen to input, keyup and change events in order to work in most browsers.
-		queue(() => {
-			element[addListener]('input', handler, eventOptions)
-			element[addListener]('keyup', handler, eventOptions)
-			element[addListener]('change', handler, eventOptions)
-		})
+		element[addListener]('input', handler, eventOptions)
+		element[addListener]('keyup', handler, eventOptions)
+		element[addListener]('change', handler, eventOptions)
 	} else {
 		const dispatch = custom && '$dispatch' || 'dispatchEvent'
-		queue(() => {
-			element[addListener]('change', () => {
-				// Trigger change to the element it-self
-				element[dispatch](getEvent('__ef_change_event__'), {bubbles: false, cancelable: false})
-				if (element.tagName === 'INPUT' && element.type === 'radio' && element.name !== '') {
-					// Trigger change to the the same named radios
-					const radios = DOM.document.querySelectorAll(`input[name=${element.name}][type=radio]`)
-					if (radios) {
-						const selected = ARR.copy(radios)
-						ARR.remove(selected, element)
+		element[addListener]('change', () => {
+			// Trigger change to the element it-self
+			element[dispatch](getEvent('__ef_change_event__'), {bubbles: false, cancelable: false})
+			if (element.tagName === 'INPUT' && element.type === 'radio' && element.name !== '') {
+				// Trigger change to the the same named radios
+				const radios = DOM.document.querySelectorAll(`input[name=${element.name}][type=radio]`)
+				if (radios) {
+					const selected = ARR.copy(radios)
+					ARR.remove(selected, element)
 
-						/* Event triggering could cause unwanted render triggers
-						 * no better ways came up at the moment
-						 */
-						for (let i of selected) i.dispatchEvent(getEvent('__ef_change_event__'))
-					}
+					/* Event triggering could cause unwanted render triggers
+					 * no better ways came up at the moment
+					 */
+					for (let i of selected) i.dispatchEvent(getEvent('__ef_change_event__'))
 				}
-			}, eventOptions)
-			// Use custom event to avoid loops and conflicts
-			element[addListener]('__ef_change_event__', handler)
-		})
+			}
+		}, eventOptions)
+		// Use custom event to avoid loops and conflicts
+		element[addListener]('__ef_change_event__', handler)
 	}
 }
 
@@ -292,10 +288,10 @@ const addAttr = (ctx, {element, attr, key, custom}) => {
 			const [prefix] = splitByColon(key)
 			if (prefix !== 'xmlns') {
 				const ns = ctx.localNamespaces[prefix] || getNamespace(prefix)
-				return queue(() => element.setAttributeNS(ns, key, attr))
+				return element.setAttributeNS(ns, key, attr)
 			}
 		}
-		return queue(() => element.setAttribute(key, attr))
+		return element.setAttribute(key, attr)
 	}
 
 	const handler = getAttrHandler(ctx, {element, key, custom})
