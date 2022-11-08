@@ -14,13 +14,16 @@ const createByTag = ({tagName, tagContent, attrs, namespace}) => {
 
 	switch (tagType) {
 		case 'string': {
-			const creationOption = {}
-			if (tagName === tagContent && attrs && attrs.is && typeof attrs.is === 'string') creationOption.is = attrs.is
-			// if (tagContent.indexOf(':') > -1) [, tagContent] = tagContent.split(':')
+			if (tagName === tagContent && attrs && attrs.is && typeof attrs.is === 'string') {
+				const { is } = attrs
+				if (namespace) return DOM.document.createElementNS(namespace, tagContent, {is})
+				return DOM.document.createElement(tagContent, {is})
+			}
+
 			// Namespaced
-			if (namespace) return DOM.document.createElementNS(namespace, tagContent, creationOption)
+			if (namespace) return DOM.document.createElementNS(namespace, tagContent)
 			// Then basic HTMLElements
-			return DOM.document.createElement(tagContent, creationOption)
+			return DOM.document.createElement(tagContent)
 		}
 		case 'function': {
 			// Then custom component or class based custom component
@@ -29,12 +32,15 @@ const createByTag = ({tagName, tagContent, attrs, namespace}) => {
 		default: {
 			// Then overriden basic element
 			if (tagContent.tag) tagName = tagContent.tag
-			// if (tagName.indexOf(':') > -1) [, tagName] = tagName.split(':')
-			if (namespace) {
-				return DOM.document.createElementNS(namespace, tagName, {is: tagContent.is})
+
+			if (tagContent.is) {
+				const { is } = tagContent
+				if (namespace) return DOM.document.createElementNS(namespace, tagName, {is})
+				return DOM.document.createElement(tagName, {is})
 			}
 
-			return DOM.document.createElement(tagName, {is: tagContent.is})
+			if (namespace) return DOM.document.createElementNS(namespace, tagName)
+			return DOM.document.createElement(tagName)
 		}
 	}
 }
