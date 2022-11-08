@@ -6,7 +6,7 @@ import {prepareArgs} from './buble-fix.js'
 import dbg from './debug.js'
 import isBrowser from './is-browser.js'
 import ARR from './array-helper.js'
-import {inform, exec} from '../render-queue.js'
+import {queueDom, inform, exec} from '../render-queue.js'
 import mountOptions from '../../mount-options.js'
 
 import shared from './global-shared.js'
@@ -19,11 +19,10 @@ const DocumentFragmentCache = []
 
 const useFragment = (cb) => {
 	const fragment = DocumentFragmentCache.pop() || DOM.document.createDocumentFragment()
-	inform()
-	// eslint-disable-next-line callback-return
-	cb(fragment)
-	DocumentFragmentCache.push(fragment)
-	exec()
+	const putBack = () => {
+		DocumentFragmentCache.push(fragment)
+	}
+	return cb(fragment, putBack)
 }
 
 const EFFragment = class {
@@ -118,9 +117,14 @@ DOM.before = (node, ...nodes) => {
 	} else if (parent.nodeType === 11) {
 		addBeforeTarget(node, nodes)
 	} else {
-		useFragment((tempFragment) => {
+		useFragment((tempFragment, putBack) => {
+			inform()
 			appendToTarget(tempFragment, nodes)
-			parent.insertBefore(tempFragment, node)
+			queueDom(() => {
+				parent.insertBefore(tempFragment, node)
+				putBack()
+			})
+			exec()
 		})
 	}
 }
@@ -137,9 +141,14 @@ DOM.append = (node, ...nodes) => {
 			handleMountPoint(nodes[0], node)
 		} else if (node.nodeType === 11) appendToTarget(node, nodes)
 		else if (node.nodeType === 1 || node.nodeType === 9) {
-			useFragment((tempFragment) => {
+			useFragment((tempFragment, putBack) => {
+				inform()
 				appendToTarget(tempFragment, nodes)
-				node.appendChild(tempFragment)
+				queueDom(() => {
+					node.appendChild(tempFragment)
+					putBack()
+				})
+				exec()
 			})
 		}
 
