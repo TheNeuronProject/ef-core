@@ -1,6 +1,7 @@
 import {createElement, typeValid} from './element-creator.js'
 import {queue, inform, exec} from './render-queue.js'
 import {DOM, EFMountPoint, useFragment} from './utils/dom-helper.js'
+import {hasColon, splitByColon, isSVGEscape} from './utils/string-ops.js'
 import {getNamespace} from './utils/namespaces.js'
 import defineArr from './utils/dom-arr-helper.js'
 import ARR from './utils/array-helper.js'
@@ -67,7 +68,6 @@ const updateMountList = ({ctx, key, value}) => {
 	else value = []
 	useFragment((fragment) => {
 		// Update components
-		inform()
 		if (node) {
 			node.clear()
 			for (let item of value) {
@@ -82,7 +82,6 @@ const updateMountList = ({ctx, key, value}) => {
 		ARR.push(node, ...value)
 		// Append to current component
 		DOM.after(anchor, fragment)
-		exec()
 	})
 }
 
@@ -183,8 +182,8 @@ const create = (ctx, {node, namespace}) => {
 				if (scoped.namespaceURI) namespace = scoped.namespaceURI
 			}
 		}
-		if (tagName.indexOf(':') > -1) {
-			const [prefix, unprefixedTagName] = tagName.split(':')
+		if (hasColon(tagName)) {
+			const [prefix, unprefixedTagName] = splitByColon(tagName)
 			if (ctx.localNamespaces[prefix]) {
 				namespace = ctx.localNamespaces[prefix]
 				isLocalPrefix = true
@@ -217,7 +216,7 @@ const create = (ctx, {node, namespace}) => {
 	if (fragment && process.env.NODE_ENV !== 'production') DOM.append(element, DOM.document.createComment('<Fragment>'))
 
 	// Leave SVG mode if tag is `foreignObject`
-	if (namespace && namespace === svgNS && ['foreignobject', 'desc', 'title'].indexOf(tagName.toLowerCase()) > -1) namespace = ''
+	if (namespace && namespace === svgNS && isSVGEscape(tagName)) namespace = ''
 
 	// restore previous namespace if namespace is defined locally
 	if (isLocalPrefix) namespace = previousNamespace

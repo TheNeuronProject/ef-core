@@ -5,6 +5,7 @@ import ARR from './utils/array-helper.js'
 import {DOM, EFFragment} from './utils/dom-helper.js'
 import getEvent from './utils/event-helper.js'
 import {getNamespace} from './utils/namespaces.js'
+import {hasColon, splitByColon} from './utils/string-ops.js'
 
 
 const typeValid = obj => ['number', 'boolean', 'string'].indexOf(typeof obj) > -1
@@ -146,27 +147,27 @@ const applyEventListener = ({element, custom, handler, trigger: {l, s, i, p, h, 
 		baseEventHandler(event)
 	}
 
-	const makePassiveEventHandler = () => {
-		baseEventHandler = (event) => {
-			handleStopOptions(event)
-			setTimeout(() => handler(event), 0)
-		}
-		eventHandler = (event) => {
-			if (!checkEventProps(event)) return
-			baseEventHandler(event)
-		}
-	}
-
-	const makeOnceEventHandler = () => {
-		const removeListener = custom && '$off' || 'removeEventListener'
-		eventHandler = (event) => {
-			if (!checkEventProps(event)) return
-			element[removeListener](l, eventHandler, eventOptions)
-			baseEventHandler(event)
-		}
-	}
-
 	if (e || o) {
+		const makePassiveEventHandler = () => {
+			baseEventHandler = (event) => {
+				handleStopOptions(event)
+				setTimeout(() => handler(event), 0)
+			}
+			eventHandler = (event) => {
+				if (!checkEventProps(event)) return
+				baseEventHandler(event)
+			}
+		}
+
+		const makeOnceEventHandler = () => {
+			const removeListener = custom && '$off' || 'removeEventListener'
+			eventHandler = (event) => {
+				if (!checkEventProps(event)) return
+				element[removeListener](l, eventHandler, eventOptions)
+				baseEventHandler(event)
+			}
+		}
+
 		if (DOM.passiveSupported || DOM.onceSupported) {
 			if (e === 0 && DOM.passiveSupported) {
 				eventOptions.passive = false
@@ -256,8 +257,8 @@ const getAttrHandler = (ctx, {element, key, custom}) => {
 	}
 
 	// Handle namespace
-	if (key.indexOf(':') > -1) {
-		const [prefix] = key.split(':')
+	if (hasColon(key)) {
+		const [prefix] = splitByColon(key)
 		const namespace = ctx.localNamespaces[prefix] || getNamespace(prefix)
 		return (val) => {
 			// Remove attribute when value is empty
@@ -287,8 +288,8 @@ const addAttr = (ctx, {element, attr, key, custom}) => {
 		// Do not set or update `is` again
 		if (key === 'is') return
 		// Handle namespaces
-		if (key.indexOf(':') > -1) {
-			const [prefix] = key.split(':')
+		if (hasColon(key)) {
+			const [prefix] = splitByColon(key)
 			if (prefix !== 'xmlns') {
 				const ns = ctx.localNamespaces[prefix] || getNamespace(prefix)
 				return queue(() => element.setAttributeNS(ns, key, attr))
