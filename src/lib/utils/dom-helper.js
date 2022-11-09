@@ -16,13 +16,22 @@ const EFMountPoint = '__ef_mount_point__'
 const DOM = {}
 
 const DocumentFragmentCache = []
+const AnchorCache = []
 
 const useFragment = (cb) => {
 	const fragment = DocumentFragmentCache.pop() || DOM.document.createDocumentFragment()
-	const putBack = () => {
+	const recycle = () => {
 		DocumentFragmentCache.push(fragment)
 	}
-	return cb(fragment, putBack)
+	return cb(fragment, recycle)
+}
+
+const useAnchor = (cb) => {
+	const anchor = AnchorCache.pop() || DOM.document.createTextNode('')
+	const recycle = () => {
+		AnchorCache.push(anchor)
+	}
+	return cb(anchor, recycle)
 }
 
 const EFFragment = class {
@@ -112,17 +121,23 @@ DOM.isNodeInstance = (node) => {
 DOM.before = (node, ...nodes) => {
 	const parent = node.parentNode
 	const firstNode = nodes[0]
-	if (nodes.length === 1 && DOM.isNodeInstance(firstNode) && firstNode.nodeType !== 3 && !firstNode[EFMountPoint]) {
+	// eslint-disable-next-line multiline-ternary, no-ternary
+	if (nodes.length === 1 && DOM.isNodeInstance(firstNode) && (firstNode.nodeType === 3 ? !firstNode[EFMountPoint] : true)) {
 		parent.insertBefore(nodes[0], node)
 	} else if (parent.nodeType === 11) {
 		addBeforeTarget(node, nodes)
 	} else {
-		useFragment((tempFragment, putBack) => {
+		useFragment((tempFragment, recycleFragment) => {
 			inform()
 			appendToTarget(tempFragment, nodes)
-			queueDom(() => {
-				parent.insertBefore(tempFragment, node)
-				putBack()
+			useAnchor((tempAnchor, recycleAnchor) => {
+				parent.insertBefore(tempAnchor, node)
+				queueDom(() => {
+					parent.insertBefore(tempFragment, tempAnchor)
+					parent.removeChild(tempAnchor)
+					recycleAnchor()
+					recycleFragment()
+				})
 			})
 			exec()
 		})
@@ -141,12 +156,12 @@ DOM.append = (node, ...nodes) => {
 			handleMountPoint(nodes[0], node)
 		} else if (node.nodeType === 11) appendToTarget(node, nodes)
 		else if (node.nodeType === 1 || node.nodeType === 9) {
-			useFragment((tempFragment, putBack) => {
+			useFragment((tempFragment, recycle) => {
 				inform()
 				appendToTarget(tempFragment, nodes)
 				queueDom(() => {
 					node.appendChild(tempFragment)
-					putBack()
+					recycle()
 				})
 				exec()
 			})
@@ -215,4 +230,4 @@ const setDOMImpl = (impl) => {
 
 if (isBrowser) setDOMImpl({document, Node})
 
-export {DOM, EFFragment, EFMountPoint, setDOMImpl, useFragment}
+export {DOM, EFFragment, EFMountPoint, setDOMImpl, useFragment, useAnchor}
