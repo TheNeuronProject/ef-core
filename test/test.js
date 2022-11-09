@@ -150,11 +150,11 @@ var data1 = {
 	}
 }
 
-var module1 = ef.create(template)
-var module2 = ef.create(template2)
-var module3 = ef.create(template3)
-var module4 = ef.create(template4)
-var module5 = ef.create(template5)
+var module1 = ef.create(template, 'Test1')
+var module2 = ef.create(template2, 'Test2')
+var module3 = ef.create(template3, 'Test3')
+var module4 = ef.create(template4, 'Test4')
+var module5 = ef.create(template5, 'Test5')
 
 class module1_1 extends module1 {
 	constructor(...args) {
@@ -243,7 +243,7 @@ state2.$methods.sendMsg = function (info) {
 	console.time('Create')
 	for (var i = 0; i < count; i++) states.push(new module1())
 	state4.list1.push.apply(state4.list1, states)
-	// ef.exec()
+	ef.exec()
 	console.timeEnd('Create')
 	var endTime = Date.now()
 	var time = endTime - startTime
@@ -251,7 +251,7 @@ state2.$methods.sendMsg = function (info) {
 	info.state.$data.text = msg
 	console.log(msg)
 	// states = []
-	// ef.inform()
+	ef.inform()
 	startTime = Date.now()
 	console.time('Destroy')
 	for (var i = 0; i < states.length; i++) {

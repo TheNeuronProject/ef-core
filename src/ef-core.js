@@ -66,8 +66,9 @@ const initComponent = (component, node) => {
 /**
  * Create a brand new component class for the new component
  * @param {EFAST} ast - AST for the component
+ * @param {string=} name - Name of the component
  */
-const create = (ast) => {
+const create = (ast, name) => {
 
 	/**
 	 * The very basic component which users can use
@@ -90,6 +91,10 @@ const create = (ast) => {
 		}
 	}
 
+	if (name) {
+		Object.defineProperty(EFComponent, 'name', {value: name})
+	}
+
 	// Workaround for a bug of buble
 	// https://github.com/bublejs/buble/issues/197
 	Object.defineProperty(EFComponent.prototype, 'constructor', {enumerable: false})
@@ -103,6 +108,55 @@ let coreVersion = '0.15.6'
 
 if (process.env.NODE_ENV !== 'production') {
 	coreVersion = `${coreVersion}+debug`
+
+	dbg.info(`ef-core v${coreVersion} initialized!`)
+
+	if (typeof globalThis !== 'undefined') {
+		if (!globalThis.devtoolsFormatters) globalThis.devtoolsFormatters = []
+
+		const shallowCloneObj = (obj, deletes) => {
+			const cloned = Object.create(null)
+			const descriptors = Object.getOwnPropertyDescriptors(obj)
+			if (deletes) {
+				for (let i of deletes) {
+					delete descriptors[i]
+				}
+			}
+			Object.defineProperties(cloned, descriptors)
+			return cloned
+		}
+
+		const formatter = {
+			header(obj, config) {
+				if (config && config.__raw) return null
+				if (obj instanceof EFBaseComponent) return ['div', {style: 'font-weight: bold; color: #5ccccc'}, `>${obj.constructor.name || '[Anonymous]'}`]
+				return null
+			},
+			hasBody() {
+				return true
+			},
+			body(obj) {
+				const mountPoints = Object.create(null)
+				for (let i in obj.$ctx.children) {
+					mountPoints[i] = obj.$ctx.children[i].node
+				}
+
+				const elements = [
+					['div', {style: 'color: #4bcb5b'}, '$data:           ', ['object', {object: Object.assign(Object.create(null), obj.$ctx.data)}]],
+					['div', {style: 'color: #4bcb5b'}, '$refs:           ', ['object', {object: shallowCloneObj(obj.$ctx.refs)}]],
+					['div', {style: 'color: #4bcb5b'}, '$methods:        ', ['object', {object: shallowCloneObj(obj.$ctx.methods)}]],
+					['div', {style: 'color: #4bcb5b'}, '[[mountpoints]]: ', ['object', {object: mountPoints}]],
+					['div', {style: 'color: #cc22bb'}, '[[props]]:       ', ['object', {object: shallowCloneObj(obj, ['$ctx'])}]],
+					['div', {style: 'color: #4bcb5b88'}, '[[element]]:     ', ['object', {object: obj.$ctx.nodeInfo.element}]],
+					['div', {style: 'color: #4bcb5b88'}, '[[parent]]:      ', ['object', {object: obj.$ctx.nodeInfo.parent}]],
+					['div', {style: 'color: #4bcb5b88'}, '[[slot]]:        ', ['object', {object: obj.$ctx.nodeInfo.key}]]
+				]
+				return ['div', {}, ...elements]
+			}
+		}
+
+		globalThis.devtoolsFormatters.push(formatter)
+	}
 }
 
 export {
@@ -124,5 +178,3 @@ export {
 	declareNamespace,
 	coreVersion as version
 }
-
-if (process.env.NODE_ENV !== 'production') dbg.info(`ef-core v${coreVersion} initialized!`)
