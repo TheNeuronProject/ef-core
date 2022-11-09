@@ -4,8 +4,8 @@ import {resolvePath} from './resolver.js'
 import ARR from './utils/array-helper.js'
 import {DOM, EFFragment} from './utils/dom-helper.js'
 import getEvent from './utils/event-helper.js'
-import {mixVal} from './utils/literals-mix.js'
 import {getNamespace} from './utils/namespaces.js'
+import {hasColon, splitByColon} from './utils/string-ops.js'
 
 
 const typeValid = obj => ['number', 'boolean', 'string'].indexOf(typeof obj) > -1
@@ -15,13 +15,16 @@ const createByTag = ({tagName, tagContent, attrs, namespace}) => {
 
 	switch (tagType) {
 		case 'string': {
-			const creationOption = {}
-			if (tagName === tagContent && attrs && attrs.is && typeof attrs.is === 'string') creationOption.is = attrs.is
-			// if (tagContent.indexOf(':') > -1) [, tagContent] = tagContent.split(':')
+			if (tagName === tagContent && attrs && attrs.is && typeof attrs.is === 'string') {
+				const { is } = attrs
+				if (namespace) return DOM.document.createElementNS(namespace, tagContent, {is})
+				return DOM.document.createElement(tagContent, {is})
+			}
+
 			// Namespaced
-			if (namespace) return DOM.document.createElementNS(namespace, tagContent, creationOption)
+			if (namespace) return DOM.document.createElementNS(namespace, tagContent)
 			// Then basic HTMLElements
-			return DOM.document.createElement(tagContent, creationOption)
+			return DOM.document.createElement(tagContent)
 		}
 		case 'function': {
 			// Then custom component or class based custom component
@@ -30,12 +33,15 @@ const createByTag = ({tagName, tagContent, attrs, namespace}) => {
 		default: {
 			// Then overriden basic element
 			if (tagContent.tag) tagName = tagContent.tag
-			// if (tagName.indexOf(':') > -1) [, tagName] = tagName.split(':')
-			if (namespace) {
-				return DOM.document.createElementNS(namespace, tagName, {is: tagContent.is})
+
+			if (tagContent.is) {
+				const { is } = tagContent
+				if (namespace) return DOM.document.createElementNS(namespace, tagName, {is})
+				return DOM.document.createElement(tagName, {is})
 			}
 
-			return DOM.document.createElement(tagName, {is: tagContent.is})
+			if (namespace) return DOM.document.createElementNS(namespace, tagName)
+			return DOM.document.createElement(tagName)
 		}
 	}
 }
@@ -49,17 +55,45 @@ const getElement = ({tagName, tagContent, attrs, ref, refs, namespace}) => {
 	return element
 }
 
-const regTmpl = ({val, ctx, handlers, subscribers, innerData, handler}) => {
+const getVal = (dataNode, key) => {
+	const data = dataNode[key]
+	if (typeof data === 'undefined') return ''
+	return data
+}
+
+const regTmpl = (ctx, {val, handler}) => {
 	if (ARR.isArray(val)) {
 		const [strs, ...exprs] = val
-		const tmpl = [strs]
 
-		const _handler = () => handler(mixVal(...tmpl))
-
-		tmpl.push(...exprs.map((item) => {
-			const {dataNode, handlerNode, _key} = initBinding({bind: item, ctx, handlers, subscribers, innerData})
+		if (!strs) {
+			const {dataNode, handlerNode, _key} = initBinding(ctx, {bind: exprs[0]})
+			const _handler = () => handler(getVal(dataNode, _key))
 			handlerNode.push(_handler)
-			return {dataNode, _key}
+
+			return _handler
+		}
+
+		const tmpl = new Array(strs.length + exprs.length)
+		const evalList = []
+
+		for (let i in strs) {
+			tmpl[i * 2] = strs[i]
+		}
+
+		const _handler = () => {
+			for (let i of evalList) i()
+			return handler(''.concat(...tmpl))
+		}
+
+		evalList.push(...exprs.map((item, index) => {
+			const {dataNode, handlerNode, _key} = initBinding(ctx, {bind: item})
+			handlerNode.push(_handler)
+
+			index = index * 2 + 1
+
+			return () => {
+				tmpl[index] = getVal(dataNode, _key)
+			}
 		}))
 
 		return _handler
@@ -113,27 +147,27 @@ const applyEventListener = ({element, custom, handler, trigger: {l, s, i, p, h, 
 		baseEventHandler(event)
 	}
 
-	const makePassiveEventHandler = () => {
-		baseEventHandler = (event) => {
-			handleStopOptions(event)
-			setTimeout(() => handler(event), 0)
-		}
-		eventHandler = (event) => {
-			if (!checkEventProps(event)) return
-			baseEventHandler(event)
-		}
-	}
-
-	const makeOnceEventHandler = () => {
-		const removeListener = custom && '$off' || 'removeEventListener'
-		eventHandler = (event) => {
-			if (!checkEventProps(event)) return
-			element[removeListener](l, eventHandler, eventOptions)
-			baseEventHandler(event)
-		}
-	}
-
 	if (e || o) {
+		const makePassiveEventHandler = () => {
+			baseEventHandler = (event) => {
+				handleStopOptions(event)
+				setTimeout(() => handler(event), 0)
+			}
+			eventHandler = (event) => {
+				if (!checkEventProps(event)) return
+				baseEventHandler(event)
+			}
+		}
+
+		const makeOnceEventHandler = () => {
+			const removeListener = custom && '$off' || 'removeEventListener'
+			eventHandler = (event) => {
+				if (!checkEventProps(event)) return
+				element[removeListener](l, eventHandler, eventOptions)
+				baseEventHandler(event)
+			}
+		}
+
 		if (DOM.passiveSupported || DOM.onceSupported) {
 			if (e === 0 && DOM.passiveSupported) {
 				eventOptions.passive = false
@@ -157,9 +191,9 @@ const applyEventListener = ({element, custom, handler, trigger: {l, s, i, p, h, 
 	element[addListener](l, eventHandler, eventOptions)
 }
 
-const addValListener = ({ctx, trigger, updateLock, handlers, subscribers, innerData, element, lastNode, key, expr, custom}) => {
+const addValListener = (ctx, {trigger, updateLock, element, lastNode, key, expr, custom}) => {
 	const addListener = custom && '$on' || 'addEventListener'
-	const {parentNode, _key} = initBinding({bind: expr, ctx, handlers, subscribers, innerData})
+	const {parentNode, _key} = initBinding(ctx, {bind: expr})
 
 	const handler = () => {
 		updateLock.locked = true
@@ -204,7 +238,7 @@ const addValListener = ({ctx, trigger, updateLock, handlers, subscribers, innerD
 	}
 }
 
-const getAttrHandler = ({element, key, custom, ctx}) => {
+const getAttrHandler = (ctx, {element, key, custom}) => {
 	// Pass directly to custom component
 	if (custom) return (val) => {
 		element[key] = val
@@ -219,8 +253,8 @@ const getAttrHandler = ({element, key, custom, ctx}) => {
 	}
 
 	// Handle namespace
-	if (key.indexOf(':') > -1) {
-		const [prefix] = key.split(':')
+	if (hasColon(key)) {
+		const [prefix] = splitByColon(key)
 		const namespace = ctx.localNamespaces[prefix] || getNamespace(prefix)
 		return (val) => {
 			// Remove attribute when value is empty
@@ -236,28 +270,35 @@ const getAttrHandler = ({element, key, custom, ctx}) => {
 	}
 }
 
-const addAttr = ({element, attr, key, ctx, handlers, subscribers, innerData, custom}) => {
+const addAttr = (ctx, {element, attr, key, custom}) => {
 	if (typeValid(attr)) {
 		if (custom) {
-			if (attr === '') element[key] = true
-			else element[key] = attr
+			if (attr === '') {
+				element[key] = true
+			} else {
+				element[key] = attr
+			}
+
 			return
 		}
 		// Do not set or update `is` again
 		if (key === 'is') return
 		// Handle namespaces
-		if (key.indexOf(':') > -1) {
-			const [prefix] = key.split(':')
-			if (prefix !== 'xmlns') return element.setAttributeNS(ctx.localNamespaces[prefix] || getNamespace(prefix), key, attr)
+		if (hasColon(key)) {
+			const [prefix] = splitByColon(key)
+			if (prefix !== 'xmlns') {
+				const ns = ctx.localNamespaces[prefix] || getNamespace(prefix)
+				return element.setAttributeNS(ns, key, attr)
+			}
 		}
 		return element.setAttribute(key, attr)
 	}
 
-	const handler = getAttrHandler({element, key, custom, ctx})
-	queue([regTmpl({val: attr, ctx, handlers, subscribers, innerData, handler})])
+	const handler = getAttrHandler(ctx, {element, key, custom})
+	queue(regTmpl(ctx, {val: attr, handler}))
 }
 
-const addProp = ({element, propPath, value, trigger, updateOnly, ctx, handlers, subscribers, innerData, custom}) => {
+const addProp = (ctx, {element, propPath, value, trigger, updateOnly, custom}) => {
 	const keyPath = ARR.copy(propPath)
 	const lastKey = keyPath.pop()
 	if (custom) keyPath.unshift('$data')
@@ -275,24 +316,24 @@ const addProp = ({element, propPath, value, trigger, updateOnly, ctx, handlers, 
 		if (updateOnly) handler = () => {
 			updateLock.locked = false
 		}
-		const _handler = regTmpl({val: value, ctx, handlers, subscribers, innerData, handler})
+		const _handler = regTmpl(ctx, {val: value, handler})
 		if (trigger ||
 			(propPath.length === 1 && (lastKey === 'value' || lastKey === 'checked')) &&
-			!value[0]) addValListener({ctx, trigger, updateLock, handlers, subscribers, innerData, element, lastNode, key: lastKey, expr: value[1], custom})
-		queue([_handler])
+			!value[0]) addValListener(ctx, {trigger, updateLock, element, lastNode, key: lastKey, expr: value[1], custom})
+		queue(_handler)
 	}
 }
 
 const rawHandler = val => val
 
-const addEvent = ({element, trigger, ctx, handlers, subscribers, innerData, custom}) => {
+const addEvent = (ctx, {element, trigger, custom}) => {
 
 	/*
 	 *  m: method                   : string
 	 *  v: value                    : string/array/undefined
 	 */
 	const {m, v} = trigger
-	const _handler = regTmpl({val: v, ctx, handlers, subscribers, innerData, handler: rawHandler})
+	const _handler = regTmpl(ctx, {val: v, ctx, handler: rawHandler})
 
 	const callEventHandler = (event) => {
 		if (ctx.methods[m]) ctx.methods[m]({e: event, event, value: _handler(), state: ctx.state})
@@ -302,7 +343,7 @@ const addEvent = ({element, trigger, ctx, handlers, subscribers, innerData, cust
 	applyEventListener({element, custom, handler: callEventHandler, trigger})
 }
 
-const createElement = ({info, ctx, innerData, refs, handlers, subscribers, namespace, fragment, custom}) => {
+const createElement = (ctx, {info, namespace, fragment, custom}) => {
 	if (fragment) return new EFFragment()
 
 	/*
@@ -315,10 +356,10 @@ const createElement = ({info, ctx, innerData, refs, handlers, subscribers, names
 	const {t, a, p, e, r} = info
 	const tagName = t
 	const tagContent = ctx.scope[t] || t
-	const element = getElement({tagName, tagContent, attrs: a, ref: r, refs, namespace})
-	if (a) for (let key in a) addAttr({element, custom, attr: a[key], key, ctx, handlers, subscribers, innerData})
-	if (p) for (let [propPath, value, trigger, updateOnly] of p) addProp({element, custom, value, propPath, trigger, updateOnly, ctx, handlers, subscribers, innerData})
-	if (e) for (let trigger of e) addEvent({element, custom, trigger, ctx, handlers, subscribers, innerData})
+	const element = getElement({tagName, tagContent, attrs: a, ref: r, refs: ctx.refs, namespace})
+	if (a) for (let key in a) addAttr(ctx, {element, custom, attr: a[key], key})
+	if (p) for (let [propPath, value, trigger, updateOnly] of p) addProp(ctx, {element, custom, value, propPath, trigger, updateOnly})
+	if (e) for (let trigger of e) addEvent(ctx, {element, custom, trigger})
 
 	return element
 }

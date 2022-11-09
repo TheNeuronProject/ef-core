@@ -66,8 +66,9 @@ const initComponent = (component, node) => {
 /**
  * Create a brand new component class for the new component
  * @param {EFAST} ast - AST for the component
+ * @param {string=} name - Name of the component
  */
-const create = (ast) => {
+const create = (ast, name) => {
 
 	/**
 	 * The very basic component which users can use
@@ -88,6 +89,10 @@ const create = (ast) => {
 			if (initState) this.$update(initState)
 			exec()
 		}
+	}
+
+	if (name) {
+		Object.defineProperty(EFComponent, 'name', {value: name})
 	}
 
 	// Workaround for a bug of buble
@@ -124,7 +129,7 @@ if (process.env.NODE_ENV !== 'production') {
 		const formatter = {
 			header(obj, config) {
 				if (config && config.__raw) return null
-				if (obj instanceof EFBaseComponent) return ['div', {style: 'font-weight: bold; color: #5ccccc'}, `>${obj.constructor.name || 'anonymous'}`]
+				if (obj instanceof EFBaseComponent) return ['div', {style: 'font-weight: bold; color: #5ccccc'}, `>${obj.constructor.name || '[Anonymous]'}`]
 				return null
 			},
 			hasBody() {
@@ -137,7 +142,7 @@ if (process.env.NODE_ENV !== 'production') {
 				}
 
 				const elements = [
-					['div', {style: 'color: #4bcb5b'}, '$data:           ', ['object', {object: shallowCloneObj(obj.$ctx.data)}]],
+					['div', {style: 'color: #4bcb5b'}, '$data:           ', ['object', {object: Object.assign(Object.create(null), obj.$ctx.data)}]],
 					['div', {style: 'color: #4bcb5b'}, '$refs:           ', ['object', {object: shallowCloneObj(obj.$ctx.refs)}]],
 					['div', {style: 'color: #4bcb5b'}, '$methods:        ', ['object', {object: shallowCloneObj(obj.$ctx.methods)}]],
 					['div', {style: 'color: #4bcb5b'}, '[[mountpoints]]: ', ['object', {object: mountPoints}]],

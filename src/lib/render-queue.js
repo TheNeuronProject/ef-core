@@ -53,7 +53,7 @@ const runQueue = (ctx) => {
 	for (let i of queueArr) i()
 }
 
-const queue = (handlers) => {
+const queue = (...handlers) => {
 	for (let i of handlers) addQueue(modificationQueue, i)
 }
 

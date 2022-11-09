@@ -121,7 +121,7 @@ const EFBaseComponent = class {
 
 		inform()
 
-		nodeInfo.element = create({node: ast, ctx, innerData, refs, handlers, subscribers, namespace: ''})
+		nodeInfo.element = create(ctx, {node: ast, namespace: ''})
 		DOM.append(safeZone, nodeInfo.placeholder)
 		queueDom(mount)
 		exec()
@@ -249,9 +249,8 @@ const EFBaseComponent = class {
 	$subscribe(pathStr, subscriber) {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		const ctx = this.$ctx
-		const { handlers, subscribers, innerData } = ctx
 		const _path = pathStr.split('.')
-		const { dataNode, subscriberNode, _key } = initBinding({bind: [_path], ctx, handlers, subscribers, innerData})
+		const { dataNode, subscriberNode, _key } = initBinding(ctx, {bind: [_path]})
 		inform()
 		// Execute the subscriber function immediately
 		try {

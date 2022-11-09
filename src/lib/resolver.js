@@ -36,13 +36,9 @@ const defineNode = (key, obj) => {
 	return node
 }
 
-const resolveReactivePath = (_path, obj) => {
-	for (let i of _path) {
-		if (obj[i]) obj = obj[i]
-		else obj = defineNode(i, obj)
-	}
-	return obj
-}
+const reactivePathReducer = (obj, key) => obj[key] || defineNode(key, obj)
+
+const resolveReactivePath = (_path, obj) => _path.reduce(reactivePathReducer, obj)
 
 const resolvePath = (_path, obj) => {
 	for (let i of _path) {

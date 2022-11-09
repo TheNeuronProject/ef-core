@@ -1,6 +1,7 @@
 import {createElement, typeValid} from './element-creator.js'
-import {queue, inform, exec} from './render-queue.js'
-import {DOM, EFMountPoint} from './utils/dom-helper.js'
+import {queue, queueDom, inform, exec} from './render-queue.js'
+import {DOM, EFMountPoint, useFragment} from './utils/dom-helper.js'
+import {hasColon, splitByColon, isSVGEscape} from './utils/string-ops.js'
 import {getNamespace} from './utils/namespaces.js'
 import defineArr from './utils/dom-arr-helper.js'
 import ARR from './utils/array-helper.js'
@@ -20,10 +21,10 @@ const checkDestroyed = (state) => {
 	if (!state.$ctx) throw new Error('[EF] This component has been destroyed!')
 }
 
-const bindTextNode = ({node, ctx, handlers, subscribers, innerData, element}) => {
+const bindTextNode = (ctx, {node, element}) => {
 	// Data binding text node
 	const textNode = DOM.document.createTextNode('')
-	const { dataNode, handlerNode, _key } = initBinding({bind: node, ctx, handlers, subscribers, innerData})
+	const { dataNode, handlerNode, _key } = initBinding(ctx, {bind: node})
 	const handler = () => {
 		const value = dataNode[_key]
 		if (typeof value === 'undefined') {
@@ -33,7 +34,7 @@ const bindTextNode = ({node, ctx, handlers, subscribers, innerData, element}) =>
 		textNode.textContent = value
 	}
 	handlerNode.push(handler)
-	queue([handler])
+	queue(handler)
 
 	// Append element to the component
 	DOM.append(element, textNode)
@@ -63,25 +64,22 @@ const updateMountList = ({ctx, key, value}) => {
 	const {children} = ctx
 	const {anchor, node} = children[key]
 	if (ARR.equals(node, value)) return
-	if (value) value = ARR.copy(value)
-	else value = []
-	const fragment = DOM.document.createDocumentFragment()
-	// Update components
 	inform()
-	if (node) {
-		node.clear()
-		for (let item of value) {
-			item = shared.toEFComponent(item)
-
-			if (item.$ctx.nodeInfo.parent) item.$umount()
-			DOM.append(fragment, item.$mount({parent: ctx.state, key}))
-		}
-	} else for (let item of value) DOM.append(fragment, item.$mount({parent: ctx.state, key}))
-	// Update stored value
-	node.length = 0
-	ARR.push(node, ...value)
-	// Append to current component
-	DOM.after(anchor, fragment)
+	if (node.length) node.clear()
+	if (value) {
+		value = ARR.copy(value)
+		useFragment((fragment, putBack) => {
+			// Update components
+			for (let item of value) DOM.append(fragment, shared.toEFComponent(item).$mount({parent: ctx.state, key}))
+			// Update stored value
+			ARR.push(node, ...value)
+			// Append to current component
+			queueDom(() => {
+				DOM.after(anchor, fragment)
+				putBack()
+			})
+		})
+	}
 	exec()
 }
 
@@ -123,7 +121,7 @@ const bindMountList = ({ctx, key, anchor}) => {
 }
 
 // Walk through the AST to perform proper actions
-const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, subscribers, namespace, create}) => {
+const resolveAST = (ctx, {node, nodeType, element, namespace, create}) => {
 	if (DOM.isNodeInstance(node)) {
 		DOM.append(element, node)
 		return
@@ -138,9 +136,9 @@ const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, su
 		// Child element or a dynamic text node
 		case 'array': {
 			// Recursive call for child element
-			if (typeOf(node[0]) === 'object') DOM.append(element, create({node, ctx, innerData, refs, handlers, subscribers, namespace}))
+			if (typeOf(node[0]) === 'object') DOM.append(element, create(ctx, {node, namespace}))
 			// Dynamic text node
-			else bindTextNode({node, ctx, handlers, subscribers, innerData, element})
+			else bindTextNode(ctx, {node, element})
 			break
 		}
 		// Mount points
@@ -162,7 +160,7 @@ const resolveAST = ({node, nodeType, element, ctx, innerData, refs, handlers, su
 
 // Create elements based on description from AST
 /* eslint {"complexity": "off"} */
-const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) => {
+const create = (ctx, {node, namespace}) => {
 	const [info, ...childNodes] = node
 	const previousNamespace = namespace
 
@@ -182,8 +180,8 @@ const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) 
 				if (scoped.namespaceURI) namespace = scoped.namespaceURI
 			}
 		}
-		if (tagName.indexOf(':') > -1) {
-			const [prefix, unprefixedTagName] = tagName.split(':')
+		if (hasColon(tagName)) {
+			const [prefix, unprefixedTagName] = splitByColon(tagName)
 			if (ctx.localNamespaces[prefix]) {
 				namespace = ctx.localNamespaces[prefix]
 				isLocalPrefix = true
@@ -212,11 +210,11 @@ const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) 
 	if (namespace === htmlNS) namespace = ''
 
 	// First create an element according to the description
-	const element = createElement({info, ctx, innerData, refs, handlers, subscribers, namespace, fragment, custom})
-	if (fragment && process.env.NODE_ENV !== 'production') element.append(DOM.document.createComment('<Fragment>'))
+	const element = createElement(ctx, {info, namespace, fragment, custom})
+	if (fragment && process.env.NODE_ENV !== 'production') DOM.append(element, DOM.document.createComment('<Fragment>'))
 
 	// Leave SVG mode if tag is `foreignObject`
-	if (namespace && namespace === svgNS && ['foreignobject', 'desc', 'title'].indexOf(tagName.toLowerCase()) > -1) namespace = ''
+	if (namespace && namespace === svgNS && isSVGEscape(tagName)) namespace = ''
 
 	// restore previous namespace if namespace is defined locally
 	if (isLocalPrefix) namespace = previousNamespace
@@ -224,9 +222,9 @@ const create = ({node, ctx, innerData, refs, handlers, subscribers, namespace}) 
 	// Append child nodes
 	for (let node of childNodes) {
 		if (node instanceof shared.EFBaseComponent) node.$mount({target: element})
-		else resolveAST({node, nodeType: typeOf(node), element, ctx, innerData, refs, handlers, subscribers, namespace, create})
+		else resolveAST(ctx, {node, nodeType: typeOf(node), element, namespace, create})
 	}
-	if (fragment && process.env.NODE_ENV !== 'production') element.append(DOM.document.createComment('</Fragment>'))
+	if (fragment && process.env.NODE_ENV !== 'production') DOM.append(element, DOM.document.createComment('</Fragment>'))
 
 	return element
 }
