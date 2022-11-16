@@ -1,3 +1,5 @@
+import ARR from './utils/array-helper.js'
+
 const userQueue = []
 let count = 0
 
@@ -77,7 +79,9 @@ const inform = () => {
 }
 
 const execUserQueue = () => {
-	for (let i of userQueue) i()
+	const _userQueue = ARR.copy(userQueue)
+	ARR.empty(userQueue)
+	for (let i of _userQueue) i()
 }
 
 /**
