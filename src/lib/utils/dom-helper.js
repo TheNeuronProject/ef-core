@@ -156,12 +156,17 @@ DOM.append = (node, ...nodes) => {
 			handleMountPoint(nodes[0], node)
 		} else if (node.nodeType === 11) appendToTarget(node, nodes)
 		else if (node.nodeType === 1 || node.nodeType === 9) {
-			useFragment((tempFragment, recycle) => {
+			useFragment((tempFragment, recycleFragment) => {
 				inform()
 				appendToTarget(tempFragment, nodes)
-				queueDom(() => {
-					node.appendChild(tempFragment)
-					recycle()
+				useAnchor((tempAnchor, recycleAnchor) => {
+					node.appendChild(tempAnchor)
+					queueDom(() => {
+						node.insertBefore(tempFragment, tempAnchor)
+						node.removeChild(tempAnchor)
+						recycleAnchor()
+						recycleFragment()
+					})
 				})
 				exec()
 			})
@@ -212,11 +217,13 @@ const setDOMImpl = (impl) => {
 			passive: {
 				get: () => {
 					DOM.passiveSupported = true
+					return DOM.passiveSupported
 				}
 			},
 			once: {
 				get: () => {
 					DOM.onceSupported = true
+					return DOM.onceSupported
 				}
 			}
 		})
