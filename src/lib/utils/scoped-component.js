@@ -15,8 +15,9 @@ import {assign} from './polyfills.js'
 const scoped = (component, initScope) => {
 	const _scope = assign({}, initScope)
 	return class Scoped extends component {
-		constructor(state, scope = {}) {
-			super(state, assign(_scope, scope))
+		constructor(state, scope) {
+			if (scope) super(state, assign({}, _scope, scope))
+			else super(state, _scope)
 		}
 	}
 }

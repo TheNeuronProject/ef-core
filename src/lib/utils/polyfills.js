@@ -1,6 +1,11 @@
 // Enough for ef's usage, so no need for a full polyfill
-const legacyAssign = (ee, er) => {
-	for (let i in er) ee[i] = er[i]
+const legacyAssign = (ee, ...ers) => {
+	for (let er of ers) {
+		for (let i in er) {
+			ee[i] = er[i]
+		}
+	}
+
 	return ee
 }
 
