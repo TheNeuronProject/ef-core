@@ -149,7 +149,7 @@ const resolveAST = (ctx, {node, nodeType, element, namespace, create}) => {
 			// Multi node mount point
 			else bindMountList({ctx, key: node.n, anchor})
 			// Append anchor
-			if (process.env.NODE_ENV !== 'production') DOM.append(element, DOM.document.createComment(`<MountPoint name="${node.n}"${node.t && ' type="list"' || ''}>`))
+			if (process.env.NODE_ENV !== 'production') DOM.append(element, DOM.document.createComment(`<MountPoint${node.t && ' type="list" ' || ' '}name="${node.n}">`))
 			DOM.append(element, anchor)
 			if (process.env.NODE_ENV !== 'production') DOM.append(element, DOM.document.createComment('</MountPoint>'))
 			break

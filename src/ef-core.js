@@ -27,6 +27,7 @@ const initComponent = (component, node) => {
 		case 'array': {
 			const [info, ...childNodes] = node
 			if (typeOf(info) === 'object') {
+				component.__used_tags[info.t] = true
 				if (info.a) registerNS(info.a, component)
 				for (let i of childNodes) initComponent(component, i)
 			}
@@ -100,11 +101,14 @@ const create = (ast, name) => {
 	Object.defineProperty(EFComponent.prototype, 'constructor', {enumerable: false})
 
 	Object.defineProperty(EFComponent, '__local_namespaces', {enumerable: false, value: {}})
+	Object.defineProperty(EFComponent, '__used_tags', {enumerable: false, value: {}})
+	Object.defineProperty(EFComponent, '__component_ast', {enumerable: false, value: ast})
+
 	initComponent(EFComponent, ast)
 	return EFComponent
 }
 
-let coreVersion = '0.16.4'
+let coreVersion = '0.16.5-alpha.1'
 
 if (process.env.NODE_ENV !== 'production') {
 	coreVersion = `${coreVersion}+debug`

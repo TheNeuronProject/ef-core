@@ -2,7 +2,7 @@ import chalk from 'chalk'
 
 // Rollup plugins
 import {eslint} from 'rollup-plugin-eslint'
-import {terser} from 'rollup-plugin-terser'
+import terser from '@rollup/plugin-terser'
 import buble from '@rollup/plugin-buble'
 import replace from '@rollup/plugin-replace'
 import resolve from '@rollup/plugin-node-resolve'
