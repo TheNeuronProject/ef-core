@@ -3,6 +3,7 @@ import {queue, inform, exec} from './render-queue.js'
 import {resolvePath} from './resolver.js'
 import ARR from './utils/array-helper.js'
 import {DOM, EFFragment} from './utils/dom-helper.js'
+import dbg from './utils/debug.js'
 import getEvent from './utils/event-helper.js'
 import {getNamespace} from './utils/namespaces.js'
 import {hasColon, splitByColon} from './utils/string-ops.js'
@@ -336,8 +337,13 @@ const addEvent = (ctx, {element, trigger, custom}) => {
 	const _handler = regTmpl(ctx, {val: v, ctx, handler: rawHandler})
 
 	const callEventHandler = (event) => {
-		if (ctx.methods[m]) ctx.methods[m]({e: event, event, value: _handler(), state: ctx.state})
-		else ctx.state.$emit(m)
+		const value = _handler()
+		if (ctx.methods[m]) ctx.methods[m]({e: event, event, value, state: ctx.state})
+		else {
+			if (process.env.NODE_ENV !== 'production') dbg.warn(`Event handler '${m}' not found! Bubbling up...`)
+			event.data = value
+			ctx.state.$emit(m, event)
+		}
 	}
 
 	applyEventListener({element, custom, handler: callEventHandler, trigger})

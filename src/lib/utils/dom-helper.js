@@ -68,7 +68,12 @@ const appendNode = (node, target) => {
 	DOM.append(target, element, placeholder)
 }
 
-const handleMountPoint = (element, target) => {
+const insertBeforeNode = (node, ref) => {
+	const {element, placeholder} = node.$ctx.nodeInfo
+	DOM.before(ref, element, placeholder)
+}
+
+const handleMountPoint = (element, target, ref) => {
 	if (element.nodeType !== 3) return
 
 	const mountPoint = element[EFMountPoint]
@@ -78,9 +83,16 @@ const handleMountPoint = (element, target) => {
 	if (!node) return
 
 	inform()
-	if (ARR.isArray(node)) {
-		for (let i of node) appendNode(i, target)
-	} else appendNode(node, target)
+	if (ref) {
+		if (ARR.isArray(node)) {
+			for (let i of node) insertBeforeNode(i, ref)
+		} else insertBeforeNode(node, ref)
+	} else {
+		// eslint-disable-next-line no-lonely-if
+		if (ARR.isArray(node)) {
+			for (let i of node) appendNode(i, target)
+		} else appendNode(node, target)
+	}
 	exec()
 }
 
@@ -90,8 +102,9 @@ const appendToTarget = (target, nodes) => {
 		if (DOM.isNodeInstance(i)) {
 			target.appendChild(i)
 			handleMountPoint(i, target)
-		} else if (isInstance(i, EFFragment)) i.appendTo(target)
-		else if (i instanceof shared.EFBaseComponent) {
+		} else if (isInstance(i, EFFragment)) {
+			i.appendTo(target)
+		} else if (i instanceof shared.EFBaseComponent) {
 			i.$mount({target})
 		}
 	}
@@ -104,9 +117,10 @@ const addBeforeTarget = (target, nodes) => {
 	for (let i of nodes) {
 		if (DOM.isNodeInstance(i)) {
 			parentNode.insertBefore(i, target)
-			handleMountPoint(i, parentNode)
-		} else if (isInstance(i, EFFragment)) i.addBefore(target)
-		else if (i instanceof shared.EFBaseComponent) {
+			handleMountPoint(i, parentNode, target)
+		} else if (isInstance(i, EFFragment)) {
+			i.addBefore(target)
+		} else if (i instanceof shared.EFBaseComponent) {
 			i.$mount({target, option: mountOptions.BEFORE})
 		}
 	}
@@ -118,23 +132,28 @@ DOM.isNodeInstance = (node) => {
 	return !!(node && node.nodeType)
 }
 
-DOM.before = (node, ...nodes) => {
-	const parent = node.parentNode
+DOM.before = (anchorNode, ...nodes) => {
+	const parentNode = anchorNode.parentNode
 	const firstNode = nodes[0]
-	// eslint-disable-next-line multiline-ternary, no-ternary
-	if (nodes.length === 1 && DOM.isNodeInstance(firstNode) && (firstNode.nodeType === 3 ? !firstNode[EFMountPoint] : true)) {
-		parent.insertBefore(nodes[0], node)
-	} else if (parent.nodeType === 11) {
-		addBeforeTarget(node, nodes)
+	if (
+		nodes.length === 1 &&
+		DOM.isNodeInstance(firstNode) &&
+		// When the node is a text node, check if it's not a mount point anchor
+		// eslint-disable-next-line multiline-ternary, no-ternary
+		(firstNode.nodeType === 3 ? !firstNode[EFMountPoint] : true)
+	) {
+		parentNode.insertBefore(nodes[0], anchorNode)
+	} else if (parentNode.nodeType === 11) {
+		addBeforeTarget(anchorNode, nodes)
 	} else {
 		useFragment((tempFragment, recycleFragment) => {
 			inform()
 			appendToTarget(tempFragment, nodes)
 			useAnchor((tempAnchor, recycleAnchor) => {
-				parent.insertBefore(tempAnchor, node)
+				parentNode.insertBefore(tempAnchor, anchorNode)
 				queueDom(() => {
-					parent.insertBefore(tempFragment, tempAnchor)
-					parent.removeChild(tempAnchor)
+					parentNode.insertBefore(tempFragment, tempAnchor)
+					parentNode.removeChild(tempAnchor)
 					recycleAnchor()
 					recycleFragment()
 				})
@@ -144,26 +163,26 @@ DOM.before = (node, ...nodes) => {
 	}
 }
 
-DOM.after = (node, ...nodes) => {
-	if (node.nextSibling) return DOM.before(node.nextSibling, ...nodes)
-	return DOM.append(node.parentNode, ...nodes)
+DOM.after = (anchorNode, ...nodes) => {
+	if (anchorNode.nextSibling) return DOM.before(anchorNode.nextSibling, ...nodes)
+	return DOM.append(anchorNode.parentNode, ...nodes)
 }
 
-DOM.append = (node, ...nodes) => {
-	if (DOM.isNodeInstance(node)) {
+DOM.append = (parentNode, ...nodes) => {
+	if (DOM.isNodeInstance(parentNode)) {
 		if (nodes.length === 1 && DOM.isNodeInstance(nodes[0])) {
-			node.appendChild(nodes[0])
-			handleMountPoint(nodes[0], node)
-		} else if (node.nodeType === 11) appendToTarget(node, nodes)
-		else if (node.nodeType === 1 || node.nodeType === 9) {
+			parentNode.appendChild(nodes[0])
+			handleMountPoint(nodes[0], parentNode)
+		} else if (parentNode.nodeType === 11) appendToTarget(parentNode, nodes)
+		else if (parentNode.nodeType === 1 || parentNode.nodeType === 9) {
 			useFragment((tempFragment, recycleFragment) => {
 				inform()
 				appendToTarget(tempFragment, nodes)
 				useAnchor((tempAnchor, recycleAnchor) => {
-					node.appendChild(tempAnchor)
+					parentNode.appendChild(tempAnchor)
 					queueDom(() => {
-						node.insertBefore(tempFragment, tempAnchor)
-						node.removeChild(tempAnchor)
+						parentNode.insertBefore(tempFragment, tempAnchor)
+						parentNode.removeChild(tempAnchor)
 						recycleAnchor()
 						recycleFragment()
 					})
@@ -176,16 +195,16 @@ DOM.append = (node, ...nodes) => {
 	}
 
 	// Handle EFComponent
-	if (node instanceof shared.EFBaseComponent) {
-		if (!(ARR.isArray(node.children))) {
-			if (process.env.NODE_ENV !== 'production') dbg.warn(node, 'has no `children` list mount point! Child nodes are all ignored!')
+	if (parentNode instanceof shared.EFBaseComponent) {
+		if (!(ARR.isArray(parentNode.children))) {
+			if (process.env.NODE_ENV !== 'production') dbg.warn(parentNode, 'has no `children` list mount point! Child nodes are all ignored!')
 			return
 		}
 
 		inform()
 		for (let i of nodes) {
 			i = shared.toEFComponent(i)
-			node.children.push(i)
+			parentNode.children.push(i)
 		}
 		exec()
 
@@ -193,7 +212,7 @@ DOM.append = (node, ...nodes) => {
 	}
 
 	// Handle fragment
-	if (isInstance(node, EFFragment)) return node.append(...nodes)
+	if (isInstance(parentNode, EFFragment)) return parentNode.append(...nodes)
 }
 
 DOM.remove = (node) => {

@@ -9,7 +9,7 @@ import {DOM} from './dom-helper.js'
  */
 const getEvent = (name, options = {}) => {
 	const event = DOM.document.createEvent && DOM.document.createEvent('CustomEvent') || new Event(name, options)
-	if (event.initEvent) event.initEvent(name, options.bubbles, options.cancelable)
+	if (event.initEvent) event.initEvent(name, options.bubbles, options.cancelable, options)
 	return event
 }
 
