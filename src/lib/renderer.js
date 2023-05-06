@@ -66,17 +66,29 @@ const unsubscribe = (pathStr, fn, subscribers) => {
  */
 const EFBaseComponent = class {
 
+	static initData() {
+		return
+	}
+	static initMethods() {
+		return
+	}
+	static initScope() {
+		return
+	}
+
 	/**
 	 * Create an EFBaseComponent with ef AST
 	 * @param {EFAST} ast - ast for the component
-	 * @param {EFTemplateScope=} scope - scope which contains custom components
+	 * @param {EFTemplateScope=} userScope - scope which contains custom components
 	 */
-	constructor(ast, scope = {}) {
+	constructor(ast, userScope = {}) {
+		const userCtx = {}
 		const children = {}
 		const refs = {}
 		const data = {}
-		const innerData = {}
-		const methods = {}
+		const innerData = this.constructor.initData(this, data, userCtx) || {}
+		const methods = this.constructor.initMethods(this, data, userCtx) || {}
+		const scope = assign(this.constructor.initScope(this, data, userCtx) || {}, userScope)
 		const handlers = {}
 		const subscribers = {}
 		const nodeInfo = {
@@ -107,7 +119,7 @@ const EFBaseComponent = class {
 
 		const ctx = {
 			ast, scope, mount, refs, data, innerData, methods,
-			handlers, subscribers, nodeInfo, safeZone,
+			handlers, subscribers, nodeInfo, safeZone, userCtx,
 			children, state: this, isFragment,
 			localNamespaces: this.constructor.__local_namespaces,
 			self: this, constructor: this.constructor
@@ -288,6 +300,17 @@ const EFBaseComponent = class {
 	}
 
 	/**
+	 * Call a defined method with value and extra arguments
+	 * @param {string} methodName - The name of the method to be called
+	 * @param {object=} scope - Scope for this method call
+	 * @param {...*} args - Other arguments
+	 * @returns {*} - Return value of the called method
+	 */
+	$call(methodName, scope = {}, ...args) {
+		return this.$methods[methodName](assign({}, scope, {state: this}), ...args)
+	}
+
+	/**
 	 * Fire a custom event using an Event object on this component
 	 * @param {Event} event - Event object to be dispatched on this component
 	 * @returns {*} - Same as the return of Node.dispatchEvent
@@ -439,7 +462,7 @@ const EFTextFragment = class extends EFBaseComponent {
 }
 mapAttrs(EFTextFragment, {text: {}})
 
-enumerableFalse(EFBaseComponent, ['$mount', '$umount', '$subscribe', '$unsubscribe', '$update', '$dispatch', '$emit', '$on', '$off', '$destroy'])
+enumerableFalse(EFBaseComponent, ['$mount', '$umount', '$subscribe', '$unsubscribe', '$update', '$call', '$dispatch', '$emit', '$on', '$off', '$destroy'])
 enumerableFalse(EFNodeWrapper, ['$el'])
 
 /**
