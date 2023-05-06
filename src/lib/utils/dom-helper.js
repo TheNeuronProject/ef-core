@@ -201,12 +201,7 @@ DOM.append = (parentNode, ...nodes) => {
 			return
 		}
 
-		inform()
-		for (let i of nodes) {
-			i = shared.toEFComponent(i)
-			parentNode.children.push(i)
-		}
-		exec()
+		parentNode.children.push(...nodes)
 
 		return
 	}

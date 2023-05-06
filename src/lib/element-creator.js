@@ -1,5 +1,5 @@
 import initBinding from './binding.js'
-import {queue, inform, exec} from './render-queue.js'
+import {inform, exec} from './render-queue.js'
 import {resolvePath} from './resolver.js'
 import ARR from './utils/array-helper.js'
 import {DOM, EFFragment} from './utils/dom-helper.js'
@@ -296,7 +296,7 @@ const addAttr = (ctx, {element, attr, key, custom}) => {
 	}
 
 	const handler = getAttrHandler(ctx, {element, key, custom})
-	queue(regTmpl(ctx, {val: attr, handler}))
+	regTmpl(ctx, {val: attr, handler})
 }
 
 const addProp = (ctx, {element, propPath, value, trigger, updateOnly, custom}) => {
@@ -307,21 +307,25 @@ const addProp = (ctx, {element, propPath, value, trigger, updateOnly, custom}) =
 	if (typeValid(value)) lastNode[lastKey] = value
 	else {
 		const updateLock = {locked: false}
-		let handler = (val) => {
-			if (!updateLock.locked && lastNode[lastKey] !== val) {
-				lastNode[lastKey] = val
+		let handler = null
+
+		if (updateOnly) {
+			handler = () => {
+				updateLock.locked = false
 			}
-			updateLock.locked = false
+		} else {
+			handler = (val) => {
+				if (!updateLock.locked && lastNode[lastKey] !== val) {
+					lastNode[lastKey] = val
+				}
+				updateLock.locked = false
+			}
 		}
 
-		if (updateOnly) handler = () => {
-			updateLock.locked = false
-		}
-		const _handler = regTmpl(ctx, {val: value, handler})
+		regTmpl(ctx, {val: value, handler})
 		if (trigger ||
 			(propPath.length === 1 && (lastKey === 'value' || lastKey === 'checked')) &&
 			!value[0]) addValListener(ctx, {trigger, updateLock, element, lastNode, key: lastKey, expr: value[1], custom})
-		queue(_handler)
 	}
 }
 

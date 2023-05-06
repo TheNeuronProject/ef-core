@@ -12,13 +12,10 @@ import {assign} from './polyfills.js'
  * @param {EFTemplateScope} initScope - Scope to be bond on the component class
  * @returns {T} - Scoped component class
  */
-const scoped = (component, initScope) => {
-	const _scope = assign({}, initScope)
-	return class Scoped extends component {
-		constructor(state, scope) {
-			if (scope) super(state, assign({}, _scope, scope))
-			else super(state, _scope)
-		}
+const scoped = (component, initScope) => class Scoped extends component {
+	static initScope(...args) {
+		const prev = super.initScope(...args) || {}
+		return assign(prev, initScope)
 	}
 }
 

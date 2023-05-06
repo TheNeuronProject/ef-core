@@ -1,5 +1,5 @@
 import {createElement, typeValid} from './element-creator.js'
-import {queue, queueDom, inform, exec} from './render-queue.js'
+import {queueDom, inform, exec} from './render-queue.js'
 import {DOM, EFMountPoint, useFragment} from './utils/dom-helper.js'
 import {hasColon, splitByColon, isSVGEscape} from './utils/string-ops.js'
 import {getNamespace} from './utils/namespaces.js'
@@ -34,7 +34,6 @@ const bindTextNode = (ctx, {node, element}) => {
 		textNode.textContent = value
 	}
 	handlerNode.push(handler)
-	queue(handler)
 
 	// Append element to the component
 	DOM.append(element, textNode)
@@ -167,13 +166,14 @@ const create = (ctx, {node, namespace}) => {
 	let tagName = info.t
 	let isLocalPrefix = false
 
+	const scoped = ctx.scope[tagName]
+
 	const fragment = tagName === 0
-	const custom = Object.isPrototypeOf.call(shared.EFBaseComponent, ctx.scope[tagName] || tagName)
+	const custom = Object.isPrototypeOf.call(shared.EFBaseComponent, scoped || tagName)
 
 	// Check if element needs a namespace
 	if (!fragment && !custom) {
-		if (ctx.scope[tagName]) {
-			const scoped = ctx.scope[tagName]
+		if (scoped) {
 			if (typeof scoped === 'string') tagName = scoped
 			else if (scoped.tag) {
 				tagName = scoped.tag
@@ -182,8 +182,9 @@ const create = (ctx, {node, namespace}) => {
 		}
 		if (hasColon(tagName)) {
 			const [prefix, unprefixedTagName] = splitByColon(tagName)
-			if (ctx.localNamespaces[prefix]) {
-				namespace = ctx.localNamespaces[prefix]
+			const localNamespaceDef = ctx.localNamespaces[prefix]
+			if (localNamespaceDef) {
+				namespace = localNamespaceDef
 				isLocalPrefix = true
 			} else {
 				namespace = getNamespace(prefix)
