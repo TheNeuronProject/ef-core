@@ -78,12 +78,6 @@ const inform = () => {
 	return count
 }
 
-const execUserQueue = () => {
-	const _userQueue = ARR.copy(userQueue)
-	ARR.empty(userQueue)
-	for (let i of _userQueue) i()
-}
-
 /**
  * Minus 1 to render count down.
  * When countdown becomes 0, render will be triggered.
@@ -92,13 +86,22 @@ const execUserQueue = () => {
  */
 const exec = (immediate) => {
 	if (!immediate && (count -= 1) > 0) return count
+
+	count = 1
+
+	while (modificationQueue.first) runQueue(modificationQueue)
+	while (domQueue.first) runQueue(domQueue)
+
 	count = 0
 
-	runQueue(modificationQueue)
-	runQueue(domQueue)
-
 	// Execute user queue after DOM update
-	if (userQueue.length > 0) setTimeout(execUserQueue, 0)
+	if (userQueue.length) {
+		const _userQueue = ARR.copy(userQueue)
+		ARR.empty(userQueue)
+		setTimeout(() => {
+			for (let i of _userQueue) i()
+		}, 0)
+	}
 
 	return count
 }
