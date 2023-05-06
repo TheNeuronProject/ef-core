@@ -79,6 +79,27 @@ const create = (ast, name) => {
 	 */
 	const EFComponent = class extends EFBaseComponent {
 
+		static beforeMount() {
+			return
+		}
+		static afterMount() {
+			return
+		}
+
+		static beforeUmount() {
+			return
+		}
+		static afterUmount() {
+			return
+		}
+
+		static beforeDestroy() {
+			return
+		}
+		static afterDestroy() {
+			return
+		}
+
 		/**
 		 * Create an EFComponent with initial state
 		 * @param {Object=} initState - Initial state for the component to create with
@@ -89,6 +110,30 @@ const create = (ast, name) => {
 			super(ast, scope)
 			if (initState) this.$update(initState)
 			exec()
+		}
+
+		$mount(...args) {
+			const {$ctx: {userCtx}} = this
+			this.constructor.beforeMount(this, userCtx)
+			const ret = super.$mount(...args)
+			this.constructor.afterMount(this, userCtx)
+			return ret
+		}
+
+		$umount(...args) {
+			const {$ctx: {userCtx}} = this
+			this.constructor.beforeUmount(this, userCtx)
+			const ret = super.$umount(...args)
+			this.constructor.afterUmount(this, userCtx)
+			return ret
+		}
+
+		$destroy(...args) {
+			const {$ctx: {userCtx}} = this
+			this.constructor.beforeDestroy(this, userCtx)
+			const ret = super.$destroy(...args)
+			this.constructor.afterDestroy(this, userCtx)
+			return ret
 		}
 	}
 
