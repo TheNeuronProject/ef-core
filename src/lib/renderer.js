@@ -220,10 +220,9 @@ const EFBaseComponent = class {
 	}
 
 	/**
-	 * @param {boolean} destroy - Set true to skip DOM operations
 	 * @returns {number} - Render count down
 	 */
-	$umount(destroy) {
+	$umount() {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		const { nodeInfo, mount } = this.$ctx
 		const { parent, key } = nodeInfo
@@ -242,11 +241,10 @@ const EFBaseComponent = class {
 			// Else Remove elements from fragment parent
 			} else if (isInstance(parent, EFFragment)) parent.$ctx.nodeInfo.element.removeChild(nodeInfo.element)
 		}
-		if (!destroy) {
-			// DOM.append(safeZone, nodeInfo.placeholder)
-			DOM.remove(nodeInfo.placeholder)
-			queueDom(mount)
-		}
+
+		DOM.remove(nodeInfo.placeholder)
+		queueDom(mount)
+
 		return exec()
 	}
 
@@ -364,7 +362,7 @@ const EFBaseComponent = class {
 	 */
 	$destroy() {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
-		const { nodeInfo, children } = this.$ctx
+		const { children } = this.$ctx
 		inform()
 		this.$umount()
 		for (let i in children) children[i].anchor[EFMountPoint] = null
@@ -375,11 +373,6 @@ const EFBaseComponent = class {
 		}
 		// Remove context
 		delete this.$ctx
-		// Push DOM removement operation to query
-		queueDom(() => {
-			DOM.remove(nodeInfo.element)
-			DOM.remove(nodeInfo.placeholder)
-		})
 		// Render
 		return exec()
 	}
