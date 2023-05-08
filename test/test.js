@@ -136,6 +136,13 @@ var template5 = parseEft(
 '\n  #is = my-btn' +
 '\n  .Click this should be get an alert')
 
+var template6 = parseEft(
+'\n>div' +
+'\n	.fragment {{id}} start' +
+'\n+children' +
+'\n>div' +
+'\n	.fragment {{id}} end')
+
 var data1 = {
 	$data: {
 			class: 'box test class',
@@ -155,6 +162,7 @@ var module2 = ef.create(template2, 'Test2')
 var module3 = ef.create(template3, 'Test3')
 var module4 = ef.create(template4, 'Test4')
 var module5 = ef.create(template5, 'Test5')
+var module6 = ef.create(template6, 'TestFragment')
 
 class module1_1 extends module1 {
 	constructor(...args) {
@@ -434,4 +442,23 @@ const onceTest = new OnceTest({
 	}
 })
 
+let fragmentID = 0
+
 onceTest.$mount({target: document.body})
+
+const FragmentTest = class extends module6 {
+	static initData() {
+		return {
+			id: ++fragmentID
+		}
+	}
+}
+
+const fragment1 = new FragmentTest()
+const fragment2 = new FragmentTest()
+const fragment3 = new FragmentTest()
+
+fragment2.children.push(fragment3)
+fragment1.children.push(fragment2)
+
+fragment1.$mount({target: document.body})
