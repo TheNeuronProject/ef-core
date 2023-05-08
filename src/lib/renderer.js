@@ -91,35 +91,35 @@ const EFBaseComponent = class {
 		const scope = assign(this.constructor.initScope(this, data, userCtx) || {}, userScope)
 		const handlers = {}
 		const subscribers = {}
+
+		const isFragment = ast[0].t === 0
+
+		let placeholder = null
+		let eventBus = null
+		let element = null
+
+		if (process.env.NODE_ENV === 'production') placeholder = DOM.document.createTextNode('')
+		else placeholder = DOM.document.createComment(`<${this.constructor.name}/>`)
+
+
+		if (DOM.textNodeSupportsEvent) eventBus = placeholder
+		else eventBus = document.createElement('i')
+
 		const nodeInfo = {
-			placeholder: null,
-			eventBus: null,
-			replace: [],
+			placeholder,
+			eventBus,
 			parent: null,
 			key: null
 		}
 
-		const isFragment = ast[0].t === 0
-
-		const safeZone = DOM.document.createDocumentFragment()
-
-		if (process.env.NODE_ENV === 'production') nodeInfo.placeholder = DOM.document.createTextNode('')
-		else nodeInfo.placeholder = DOM.document.createComment(`<${this.constructor.name}/>`)
-
-		if (DOM.textNodeSupportsEvent) nodeInfo.eventBus = nodeInfo.placeholder
-		else nodeInfo.eventBus = document.createElement('i')
-
 		const mount = () => {
-			if (nodeInfo.replace.length) {
-				for (let i of nodeInfo.replace) DOM.remove(i)
-				ARR.empty(nodeInfo.replace)
-			}
-			DOM.before(nodeInfo.placeholder, nodeInfo.element)
+			if (placeholder.parentNode) DOM.before(placeholder, element)
+			else DOM.remove(element)
 		}
 
 		const ctx = {
 			ast, scope, mount, refs, data, innerData, methods,
-			handlers, subscribers, nodeInfo, safeZone, userCtx,
+			handlers, subscribers, nodeInfo, userCtx,
 			children, state: this, isFragment,
 			localNamespaces: this.constructor.__local_namespaces,
 			self: this, constructor: this.constructor
@@ -131,12 +131,9 @@ const EFBaseComponent = class {
 			configurable: true
 		})
 
-		inform()
+		element = create(ctx, {node: ast, namespace: ''})
 
-		nodeInfo.element = create(ctx, {node: ast, namespace: ''})
-		DOM.append(safeZone, nodeInfo.placeholder)
-		queueDom(mount)
-		exec()
+		nodeInfo.element = element
 	}
 
 	get $data() {
@@ -209,7 +206,7 @@ const EFBaseComponent = class {
 			}
 			case mountOptions.REPLACE: {
 				DOM.before(target, nodeInfo.placeholder)
-				nodeInfo.replace.push(target)
+				DOM.remove(target)
 				break
 			}
 			case mountOptions.APPEND:
@@ -228,7 +225,7 @@ const EFBaseComponent = class {
 	 */
 	$umount(destroy) {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
-		const { nodeInfo, mount, safeZone } = this.$ctx
+		const { nodeInfo, mount } = this.$ctx
 		const { parent, key } = nodeInfo
 		nodeInfo.parent = null
 		nodeInfo.key = null
@@ -246,7 +243,8 @@ const EFBaseComponent = class {
 			} else if (isInstance(parent, EFFragment)) parent.$ctx.nodeInfo.element.removeChild(nodeInfo.element)
 		}
 		if (!destroy) {
-			DOM.append(safeZone, nodeInfo.placeholder)
+			// DOM.append(safeZone, nodeInfo.placeholder)
+			DOM.remove(nodeInfo.placeholder)
 			queueDom(mount)
 		}
 		return exec()
@@ -456,11 +454,11 @@ const EFTextFragment = class extends EFBaseComponent {
 	constructor(text) {
 		inform()
 		super(textFragmentAst)
-		this.t = text
+		this.text = text
 		exec()
 	}
 }
-mapAttrs(EFTextFragment, {text: {}})
+mapAttrs(EFTextFragment, {text: {key: 't'}})
 
 enumerableFalse(EFBaseComponent, ['$mount', '$umount', '$subscribe', '$unsubscribe', '$update', '$call', '$dispatch', '$emit', '$on', '$off', '$destroy'])
 enumerableFalse(EFNodeWrapper, ['$el'])

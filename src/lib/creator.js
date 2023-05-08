@@ -103,20 +103,18 @@ const applyMountPoint = (type, key, tpl) => {
 }
 
 const bindMountNode = ({ctx, key, anchor}) => {
-	const {children, isFragment} = ctx
+	const { children } = ctx
 	children[key] = {anchor}
 	anchor[EFMountPoint] = children[key]
-	if (isFragment) DOM.append(ctx.safeZone, anchor)
 }
 
 const bindMountList = ({ctx, key, anchor}) => {
-	const {children, isFragment} = ctx
+	const { children } = ctx
 	children[key] = {
 		node: defineArr([], {ctx, key, anchor}),
 		anchor
 	}
 	anchor[EFMountPoint] = children[key]
-	if (isFragment) DOM.append(ctx.safeZone, anchor)
 }
 
 // Walk through the AST to perform proper actions
