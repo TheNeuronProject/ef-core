@@ -80,10 +80,10 @@ const EFBaseComponent = class {
 		return {}
 	}
 
-	static init(self, $data, userCtx) {
-		const data = this.initData(self, $data, userCtx)
-		const methods = this.initMethods(self, $data, userCtx)
-		const scope = this.initScope(self, $data, userCtx)
+	static init(self, $data) {
+		const data = this.initData(self, $data)
+		const methods = this.initMethods(self, $data)
+		const scope = this.initScope(self, $data)
 
 		return { data, methods, scope }
 	}
@@ -94,7 +94,6 @@ const EFBaseComponent = class {
 	 * @param {EFTemplateScope=} userScope - scope which contains custom components
 	 */
 	constructor(ast, userScope = {}) {
-		const userCtx = {}
 		const children = {}
 		const refs = {}
 		const data = {}
@@ -127,7 +126,7 @@ const EFBaseComponent = class {
 		}
 
 		const ctx = {
-			ast, mount, refs, data, userCtx,
+			ast, mount, refs, data,
 			handlers, subscribers, nodeInfo,
 			children, state: this, isFragment,
 			localNamespaces: this.constructor.__local_namespaces,
@@ -140,16 +139,27 @@ const EFBaseComponent = class {
 			configurable: true
 		})
 
-		const defaultScope = this.constructor.__defaultScope()
-		const { data: innerData, methods, scope } = this.constructor.init(this, data, userCtx)
+		const watchers = []
+		const watch = (path, handler) => {
+			watchers.push([path, handler])
+			return () => {
+				this.$unsubscribe(path, handler)
+			}
+		}
+
+		const { data: innerData, methods, scope } = this.constructor.init(this, data, watch)
 
 		ctx.innerData = innerData || {}
 		ctx.methods = methods || {}
-		ctx.scope = assign(defaultScope, scope, userScope)
+		ctx.scope = assign(this.constructor.__defaultScope(), scope, userScope)
 
 		element = create(ctx, {node: ast, namespace: ''})
 
 		nodeInfo.element = element
+
+		for (let [path, handler] of watchers) {
+			this.$subscribe(path, handler)
+		}
 	}
 
 	get $data() {
