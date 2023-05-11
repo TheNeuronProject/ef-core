@@ -13,8 +13,8 @@ import {assign} from './polyfills.js'
  * @returns {T} - Scoped component class
  */
 const scoped = (component, initScope) => class Scoped extends component {
-	static initScope(...args) {
-		const prev = super.initScope(...args) || {}
+	static __defaultScope() {
+		const prev = super.__defaultScope()
 		return assign(prev, initScope)
 	}
 }

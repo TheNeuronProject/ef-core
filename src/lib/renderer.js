@@ -76,6 +76,18 @@ const EFBaseComponent = class {
 		return
 	}
 
+	static __defaultScope() {
+		return {}
+	}
+
+	static init(self, $data, userCtx) {
+		const data = this.initData(self, $data, userCtx)
+		const methods = this.initMethods(self, $data, userCtx)
+		const scope = this.initScope(self, $data, userCtx)
+
+		return { data, methods, scope }
+	}
+
 	/**
 	 * Create an EFBaseComponent with ef AST
 	 * @param {EFAST} ast - ast for the component
@@ -86,9 +98,6 @@ const EFBaseComponent = class {
 		const children = {}
 		const refs = {}
 		const data = {}
-		const innerData = this.constructor.initData(this, data, userCtx) || {}
-		const methods = this.constructor.initMethods(this, data, userCtx) || {}
-		const scope = assign(this.constructor.initScope(this, data, userCtx) || {}, userScope)
 		const handlers = {}
 		const subscribers = {}
 
@@ -118,8 +127,8 @@ const EFBaseComponent = class {
 		}
 
 		const ctx = {
-			ast, scope, mount, refs, data, innerData, methods,
-			handlers, subscribers, nodeInfo, userCtx,
+			ast, mount, refs, data, userCtx,
+			handlers, subscribers, nodeInfo,
 			children, state: this, isFragment,
 			localNamespaces: this.constructor.__local_namespaces,
 			self: this, constructor: this.constructor
@@ -130,6 +139,13 @@ const EFBaseComponent = class {
 			enumerable: false,
 			configurable: true
 		})
+
+		const defaultScope = this.constructor.__defaultScope()
+		const { data: innerData, methods, scope } = this.constructor.init(this, data, userCtx)
+
+		ctx.innerData = innerData || {}
+		ctx.methods = methods || {}
+		ctx.scope = assign(defaultScope, scope, userScope)
 
 		element = create(ctx, {node: ast, namespace: ''})
 
