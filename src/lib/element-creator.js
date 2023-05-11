@@ -344,7 +344,7 @@ const addEvent = (ctx, {element, trigger, custom}) => {
 		const value = _handler()
 		if (ctx.methods[m]) ctx.methods[m]({e: event, event, value, state: ctx.state})
 		else {
-			if (process.env.NODE_ENV !== 'production') dbg.warn(`Event handler '${m}' not found! Bubbling up...`)
+			if (process.env.NODE_ENV !== 'production') dbg.warn(`Bubbling up event '${m}'...`)
 			event.data = value
 			ctx.state.$emit(m, event)
 		}
