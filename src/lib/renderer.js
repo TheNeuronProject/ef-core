@@ -80,10 +80,10 @@ const EFBaseComponent = class {
 		return {}
 	}
 
-	static init(self, $data) {
-		const data = this.initData(self, $data)
-		const methods = this.initMethods(self, $data)
-		const scope = this.initScope(self, $data)
+	static init(self, $data, watch) {
+		const data = this.initData(self, $data, watch)
+		const methods = this.initMethods(self, $data, watch)
+		const scope = this.initScope(self, $data, watch)
 
 		return { data, methods, scope }
 	}
@@ -141,17 +141,38 @@ const EFBaseComponent = class {
 
 		const watchers = []
 		const watch = (path, handler) => {
-			watchers.push([path, handler])
+			const subscriberInfo = [path, handler]
+			watchers.push(subscriberInfo)
 			return () => {
-				this.$unsubscribe(path, handler)
+				if (element) this.$unsubscribe(path, handler)
+				else ARR.remove(subscriberInfo)
 			}
 		}
 
-		const { data: innerData, methods, scope } = this.constructor.init(this, data, watch)
+		const {
+			data: innerData,
+			methods,
+			scope,
+			beforeMount,
+			afterMount,
+			beforeUmount,
+			afterUmount,
+			beforeDestroy,
+			afterDestroy,
+			onCreated
+		} = this.constructor.init(this, data, watch)
 
-		ctx.innerData = innerData || {}
-		ctx.methods = methods || {}
-		ctx.scope = assign(this.constructor.__defaultScope(), scope, userScope)
+		assign(ctx, {
+			innerData: innerData || {},
+			methods: methods || {},
+			scope: assign(this.constructor.__defaultScope(), scope, userScope),
+			beforeMount,
+			afterMount,
+			beforeUmount,
+			afterUmount,
+			beforeDestroy,
+			afterDestroy
+		})
 
 		element = create(ctx, {node: ast, namespace: ''})
 
@@ -160,6 +181,8 @@ const EFBaseComponent = class {
 		for (let [path, handler] of watchers) {
 			this.$subscribe(path, handler)
 		}
+
+		if (onCreated) onCreated()
 	}
 
 	get $data() {
@@ -201,8 +224,17 @@ const EFBaseComponent = class {
 	 */
 	$mount({target, option, parent, key}) {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
-		const { nodeInfo, mount } = this.$ctx
-		if (typeof target === 'string') target = document.querySelector(target)
+		const { nodeInfo, mount, beforeMount, afterMount } = this.$ctx
+
+
+		let ret = null
+
+		if (typeof target === 'string') {
+			target = document.querySelector(target)
+			if (!target) throw new Error('Mount target not found!')
+		}
+
+		if (beforeMount) beforeMount()
 
 		inform()
 		if (nodeInfo.parent) {
@@ -216,33 +248,37 @@ const EFBaseComponent = class {
 		nodeInfo.key = key
 		queueDom(mount)
 
-		if (!target) {
+		if (target) {
+			switch (option) {
+				case mountOptions.BEFORE: {
+					DOM.before(target, nodeInfo.placeholder)
+					break
+				}
+				case mountOptions.AFTER: {
+					DOM.after(target, nodeInfo.placeholder)
+					break
+				}
+				case mountOptions.REPLACE: {
+					DOM.before(target, nodeInfo.placeholder)
+					DOM.remove(target)
+					break
+				}
+				case mountOptions.APPEND:
+				default: {
+					// Parent is EFFragment should only happen when using jsx
+					if (isInstance(parent, EFFragment)) DOM.append(target, nodeInfo.element)
+					else DOM.append(target, nodeInfo.placeholder)
+				}
+			}
+			ret = exec()
+		} else {
 			exec()
-			return nodeInfo.placeholder
+			ret = nodeInfo.placeholder
 		}
 
-		switch (option) {
-			case mountOptions.BEFORE: {
-				DOM.before(target, nodeInfo.placeholder)
-				break
-			}
-			case mountOptions.AFTER: {
-				DOM.after(target, nodeInfo.placeholder)
-				break
-			}
-			case mountOptions.REPLACE: {
-				DOM.before(target, nodeInfo.placeholder)
-				DOM.remove(target)
-				break
-			}
-			case mountOptions.APPEND:
-			default: {
-				// Parent is EFFragment should only happen when using jsx
-				if (isInstance(parent, EFFragment)) DOM.append(target, nodeInfo.element)
-				else DOM.append(target, nodeInfo.placeholder)
-			}
-		}
-		return exec()
+		if (afterMount) afterMount()
+
+		return ret
 	}
 
 	/**
@@ -250,10 +286,12 @@ const EFBaseComponent = class {
 	 */
 	$umount() {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
-		const { nodeInfo, mount } = this.$ctx
+		const { nodeInfo, mount, beforeUmount, afterUmount } = this.$ctx
 		const { parent, key } = nodeInfo
 		nodeInfo.parent = null
 		nodeInfo.key = null
+
+		if (beforeUmount) beforeUmount()
 
 		inform()
 		if (parent) {
@@ -271,7 +309,11 @@ const EFBaseComponent = class {
 		DOM.remove(nodeInfo.placeholder)
 		queueDom(mount)
 
-		return exec()
+		const ret = exec()
+
+		if (afterUmount) afterUmount()
+
+		return ret
 	}
 
 	/**
@@ -388,7 +430,10 @@ const EFBaseComponent = class {
 	 */
 	$destroy() {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
-		const { children } = this.$ctx
+		const { children, beforeDestroy, afterDestroy } = this.$ctx
+
+		if (beforeDestroy) beforeDestroy()
+
 		inform()
 		this.$umount()
 		for (let i in children) children[i].anchor[EFMountPoint] = null
@@ -400,7 +445,11 @@ const EFBaseComponent = class {
 		// Remove context
 		delete this.$ctx
 		// Render
-		return exec()
+		const ret = exec()
+
+		if (afterDestroy) afterDestroy()
+
+		return ret
 	}
 }
 
