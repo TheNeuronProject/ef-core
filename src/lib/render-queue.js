@@ -81,7 +81,7 @@ const inform = () => {
 /**
  * Minus 1 to render count down.
  * When countdown becomes 0, render will be triggered.
- * @param {boolean} immediate - Render immediately, will force countdown become 0
+ * @param {boolean=} immediate - Render immediately, will force countdown become 0
  * @returns {number} - Render count down
  */
 const exec = (immediate) => {
