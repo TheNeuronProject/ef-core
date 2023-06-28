@@ -236,7 +236,7 @@ state.$subscribe('numOutput', ({state, value}) => {
 
 var states = []
 
-state2.$data.style = '100'
+state2.$data.style = '10000'
 
 state2.$data.btnText = 'Run Test!'
 
