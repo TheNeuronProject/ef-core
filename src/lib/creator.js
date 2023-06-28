@@ -3,6 +3,7 @@ import {queueDom, inform, exec} from './render-queue.js'
 import {DOM, EFMountPoint, useFragment} from './utils/dom-helper.js'
 import {hasColon, splitByColon, isSVGEscape} from './utils/string-ops.js'
 import {getNamespace} from './utils/namespaces.js'
+import noop from './utils/noop.js'
 import defineArr from './utils/dom-arr-helper.js'
 import ARR from './utils/array-helper.js'
 import typeOf from './utils/type-of.js'
@@ -21,7 +22,7 @@ const checkDestroyed = (state) => {
 	if (!state.$ctx) throw new Error('[EF] This component has been destroyed!')
 }
 
-const bindTextNode = (ctx, {node, element}) => {
+const bindTextNode = (ctx, {apply, node}) => {
 	// Data binding text node
 	const textNode = DOM.document.createTextNode('')
 	const { dataNode, handlerNode, _key } = initBinding(ctx, {bind: node})
@@ -36,7 +37,7 @@ const bindTextNode = (ctx, {node, element}) => {
 	handlerNode.push(handler)
 
 	// Append element to the component
-	DOM.append(element, textNode)
+	apply(textNode)
 }
 
 const updateMountNode = ({ctx, key, value}) => {
@@ -104,8 +105,9 @@ const applyMountPoint = (type, key, tpl) => {
 
 const bindMountNode = ({ctx, key, anchor}) => {
 	const { children } = ctx
-	children[key] = {anchor}
-	anchor[EFMountPoint] = children[key]
+	const info = {anchor}
+	children[key] = info
+	anchor[EFMountPoint] = info
 }
 
 const bindMountList = ({ctx, key, anchor}) => {
@@ -118,24 +120,24 @@ const bindMountList = ({ctx, key, anchor}) => {
 }
 
 // Walk through the AST to perform proper actions
-const resolveAST = (ctx, {node, nodeType, element, namespace, create}) => {
+const resolveAST = (ctx, {apply, node, nodeType, namespace, create}) => {
 	if (DOM.isNodeInstance(node)) {
-		DOM.append(element, node)
+		apply(node)
 		return
 	}
 
 	switch (nodeType) {
 		// Static text node
 		case 'string': {
-			DOM.append(element, DOM.document.createTextNode(node))
+			apply(DOM.document.createTextNode(node))
 			break
 		}
 		// Child element or a dynamic text node
 		case 'array': {
 			// Recursive call for child element
-			if (typeOf(node[0]) === 'object') DOM.append(element, create(ctx, {node, namespace}))
+			if (typeOf(node[0]) === 'object') apply(create(ctx, {node, namespace}))
 			// Dynamic text node
-			else bindTextNode(ctx, {node, element})
+			else bindTextNode(ctx, {apply, node})
 			break
 		}
 		// Mount points
@@ -146,9 +148,9 @@ const resolveAST = (ctx, {node, nodeType, element, namespace, create}) => {
 			// Multi node mount point
 			else bindMountList({ctx, key: node.n, anchor})
 			// Append anchor
-			if (process.env.NODE_ENV !== 'production') DOM.append(element, DOM.document.createComment(`<MountPoint${node.t && ' type="list" ' || ' '}name="${node.n}">`))
-			DOM.append(element, anchor)
-			if (process.env.NODE_ENV !== 'production') DOM.append(element, DOM.document.createComment('</MountPoint>'))
+			if (process.env.NODE_ENV !== 'production') apply(DOM.document.createComment(`<MountPoint${node.t && ' type="list" ' || ' '}name="${node.n}">`))
+			apply(anchor)
+			if (process.env.NODE_ENV !== 'production') apply(DOM.document.createComment('</MountPoint>'))
 			break
 		}
 		default:
@@ -209,8 +211,47 @@ const create = (ctx, {node, namespace}) => {
 	if (namespace === htmlNS) namespace = ''
 
 	// First create an element according to the description
-	const element = createElement(ctx, {info, namespace, fragment, custom})
-	if (fragment && process.env.NODE_ENV !== 'production') DOM.append(element, DOM.document.createComment('<Fragment>'))
+	const [element, type] = createElement(ctx, {info, namespace, fragment, custom})
+
+	let apply = noop
+
+	switch (type) {
+		case 'string':
+		case 'object': {
+			apply = (...args) => {
+				DOM.append(element, ...args)
+			}
+			break
+		}
+
+		case 'function': {
+			const { children } = element.$ctx
+			if (children.children) {
+				const anchor = children.children.anchor
+				if (anchor) {
+					apply = (...args) => {
+						DOM.before(anchor, ...args)
+					}
+				}
+			} else if (Array.isArray(element.children)) {
+				apply = (...args) => {
+					element.children.push(...args)
+				}
+			}
+			break
+		}
+
+		case 'fragment': {
+			apply = (...args) => {
+				element.append(...args)
+			}
+			break
+		}
+
+		default:
+	}
+
+	if (fragment && process.env.NODE_ENV !== 'production') apply(DOM.document.createComment('<Fragment>'))
 
 	// Leave SVG mode if tag is `foreignObject`
 	if (namespace && namespace === svgNS && isSVGEscape(tagName)) namespace = ''
@@ -220,10 +261,9 @@ const create = (ctx, {node, namespace}) => {
 
 	// Append child nodes
 	for (let node of childNodes) {
-		if (node instanceof shared.EFBaseComponent) node.$mount({target: element})
-		else resolveAST(ctx, {node, nodeType: typeOf(node), element, namespace, create})
+		resolveAST(ctx, {apply, node, nodeType: typeOf(node), namespace, create})
 	}
-	if (fragment && process.env.NODE_ENV !== 'production') DOM.append(element, DOM.document.createComment('</Fragment>'))
+	if (fragment && process.env.NODE_ENV !== 'production') apply(DOM.document.createComment('</Fragment>'))
 
 	return element
 }

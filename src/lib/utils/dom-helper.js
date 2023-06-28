@@ -2,7 +2,6 @@
 import isInstance from './fast-instance-of.js'
 import noop from './noop.js'
 import {assign} from './polyfills.js'
-import {prepareArgs} from './buble-fix.js'
 import dbg from './debug.js'
 import isBrowser from './is-browser.js'
 import ARR from './array-helper.js'
@@ -41,16 +40,16 @@ const EFFragment = class {
 	}
 
 	append(...args) {
-		DOM.append(this.$safeZone, ...prepareArgs(args))
-		return this.$children.push(...args)
+		DOM.append(this.$safeZone, ...args)
+		ARR.push(this.$children, ...args)
 	}
 
 	appendTo(node) {
-		DOM.append(node, ...prepareArgs(this.$children))
+		DOM.append(node, ...this.$children)
 	}
 
 	addBefore(node) {
-		DOM.before(node, ...prepareArgs(this.$children))
+		DOM.before(node, ...this.$children)
 	}
 
 	removeChild(node) {
@@ -59,7 +58,7 @@ const EFFragment = class {
 	}
 
 	remove() {
-		for (let i of this.$children) DOM.append(this.$safeZone, i)
+		DOM.append(this.$safeZone, ...this.$children)
 	}
 }
 
@@ -173,8 +172,9 @@ DOM.append = (parentNode, ...nodes) => {
 		if (nodes.length === 1 && DOM.isNodeInstance(nodes[0])) {
 			parentNode.appendChild(nodes[0])
 			handleMountPoint(nodes[0], parentNode)
-		} else if (parentNode.nodeType === 11) appendToTarget(parentNode, nodes)
-		else if (parentNode.nodeType === 1 || parentNode.nodeType === 9) {
+		} else if (parentNode.nodeType === 11) {
+			appendToTarget(parentNode, nodes)
+		} else if (parentNode.nodeType === 1 || parentNode.nodeType === 9) {
 			useFragment((tempFragment, recycleFragment) => {
 				inform()
 				appendToTarget(tempFragment, nodes)
@@ -207,7 +207,7 @@ DOM.append = (parentNode, ...nodes) => {
 	}
 
 	// Handle fragment
-	if (isInstance(parentNode, EFFragment)) return parentNode.append(...nodes)
+	if (isInstance(parentNode, EFFragment)) parentNode.append(...nodes)
 }
 
 DOM.remove = (node) => {

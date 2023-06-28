@@ -8,12 +8,9 @@ import getEvent from './utils/event-helper.js'
 import {getNamespace} from './utils/namespaces.js'
 import {hasColon, splitByColon} from './utils/string-ops.js'
 
-
 const typeValid = obj => ['number', 'boolean', 'string'].indexOf(typeof obj) > -1
 
-const createByTag = ({tagName, tagContent, attrs, namespace}) => {
-	const tagType = typeof tagContent
-
+const createByTag = ({tagType, tagName, tagContent, attrs, namespace}) => {
 	switch (tagType) {
 		case 'string': {
 			if (tagName === tagContent && attrs && attrs.is && typeof attrs.is === 'string') {
@@ -47,8 +44,8 @@ const createByTag = ({tagName, tagContent, attrs, namespace}) => {
 	}
 }
 
-const getElement = ({tagName, tagContent, attrs, ref, refs, namespace}) => {
-	const element = createByTag({tagName, tagContent, attrs, namespace})
+const getElement = ({tagType, tagName, tagContent, attrs, ref, refs, namespace}) => {
+	const element = createByTag({tagType, tagName, tagContent, attrs, namespace})
 	if (ref) Object.defineProperty(refs, ref, {
 		value: element,
 		enumerable: true
@@ -323,9 +320,13 @@ const addProp = (ctx, {element, propPath, value, trigger, updateOnly, custom}) =
 		}
 
 		regTmpl(ctx, {val: value, handler})
-		if (trigger ||
+		if (
+			trigger ||
 			(propPath.length === 1 && (lastKey === 'value' || lastKey === 'checked')) &&
-			!value[0]) addValListener(ctx, {trigger, updateLock, element, lastNode, key: lastKey, expr: value[1], custom})
+			!value[0]
+		) {
+			addValListener(ctx, {trigger, updateLock, element, lastNode, key: lastKey, expr: value[1], custom})
+		}
 	}
 }
 
@@ -354,7 +355,7 @@ const addEvent = (ctx, {element, trigger, custom}) => {
 }
 
 const createElement = (ctx, {info, namespace, fragment, custom}) => {
-	if (fragment) return new EFFragment()
+	if (fragment) return [new EFFragment(), 'fragment']
 
 	/*
 	 *  t: tag           : class | string | int, 0 means fragment
@@ -366,12 +367,13 @@ const createElement = (ctx, {info, namespace, fragment, custom}) => {
 	const {t, a, p, e, r} = info
 	const tagName = t
 	const tagContent = ctx.scope[t] || t
-	const element = getElement({tagName, tagContent, attrs: a, ref: r, refs: ctx.refs, namespace})
+	const tagType = typeof tagContent
+	const element = getElement({tagType, tagName, tagContent, attrs: a, ref: r, refs: ctx.refs, namespace})
 	if (a) for (let key in a) addAttr(ctx, {element, custom, attr: a[key], key})
 	if (p) for (let [propPath, value, trigger, updateOnly] of p) addProp(ctx, {element, custom, value, propPath, trigger, updateOnly})
 	if (e) for (let trigger of e) addEvent(ctx, {element, custom, trigger})
 
-	return element
+	return [element, tagType]
 }
 
 export {createElement, typeValid}

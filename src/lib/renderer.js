@@ -8,7 +8,6 @@ import ARR from './utils/array-helper.js'
 import {assign, legacyAssign} from './utils/polyfills.js'
 import isInstance from './utils/fast-instance-of.js'
 import typeOf from './utils/type-of.js'
-import {enumerableFalse} from './utils/buble-fix.js'
 import dbg from './utils/debug.js'
 import getEvent from './utils/event-helper.js'
 import mountOptions from '../mount-options.js'
@@ -94,6 +93,13 @@ const EFBaseComponent = class {
 	 * @param {EFTemplateScope=} userScope - scope which contains custom components
 	 */
 	constructor(ast, userScope = {}) {
+		// const newTarget = new.target
+		const newTarget = this.constructor
+
+		if (process.env.NODE_ENV !== 'production' && newTarget === EFBaseComponent) {
+			throw new TypeError('[EF] Illegal constructor. EFBaseComponent must not be used directly!')
+		}
+
 		const children = {}
 		const refs = {}
 		const data = {}
@@ -129,8 +135,8 @@ const EFBaseComponent = class {
 			ast, mount, refs, data,
 			handlers, subscribers, nodeInfo,
 			children, state: this, isFragment,
-			localNamespaces: this.constructor.__local_namespaces,
-			self: this, constructor: this.constructor
+			localNamespaces: newTarget.__local_namespaces,
+			self: this, constructor: newTarget
 		}
 
 		Object.defineProperty(this, '$ctx', {
@@ -160,12 +166,12 @@ const EFBaseComponent = class {
 			beforeDestroy,
 			afterDestroy,
 			onCreated
-		} = this.constructor.init(this, data, watch)
+		} = newTarget.init(this, data, watch)
 
 		assign(ctx, {
 			innerData: innerData || {},
 			methods: methods || {},
-			scope: assign(this.constructor.__defaultScope(), scope, userScope),
+			scope: assign(newTarget.__defaultScope(), scope, userScope),
 			beforeMount,
 			afterMount,
 			beforeUmount,
@@ -265,9 +271,7 @@ const EFBaseComponent = class {
 				}
 				case mountOptions.APPEND:
 				default: {
-					// Parent is EFFragment should only happen when using jsx
-					if (isInstance(parent, EFFragment)) DOM.append(target, nodeInfo.element)
-					else DOM.append(target, nodeInfo.placeholder)
+					DOM.append(target, nodeInfo.placeholder)
 				}
 			}
 			ret = exec()
@@ -476,13 +480,16 @@ const EFNodeWrapper = class extends EFBaseComponent {
 	constructor(...nodes) {
 		super(fragmentAST)
 
+		// element.append(...nodes)
 		const element = this.$ctx.nodeInfo.element
+		// const childrenArr = element.$children
+
+		// childrenArr.push(...nodes)
 		element.append(...nodes)
 
-		if (process.env.NODE_ENV !== 'production') {
-			const childrenArr = element.$children
-			element.append(ARR.remove(childrenArr, childrenArr[1]))
-		}
+		// if (process.env.NODE_ENV !== 'production') {
+		// 	childrenArr.push(ARR.remove(childrenArr, childrenArr[1]))
+		// }
 
 		this.$ctx.elements = nodes
 	}
@@ -528,8 +535,6 @@ const EFTextFragment = class extends EFBaseComponent {
 }
 mapAttrs(EFTextFragment, {text: {key: 't'}})
 
-enumerableFalse(EFBaseComponent, ['$mount', '$umount', '$subscribe', '$unsubscribe', '$update', '$call', '$dispatch', '$emit', '$on', '$off', '$destroy'])
-enumerableFalse(EFNodeWrapper, ['$el'])
 
 /**
  * Transform almost anyting into ef component
@@ -548,6 +553,7 @@ const toEFComponent = (value) => {
 }
 
 shared.EFBaseComponent = EFBaseComponent
+shared.EFNodeWrapper = EFNodeWrapper
 shared.toEFComponent = toEFComponent
 
 export {EFBaseComponent, EFNodeWrapper, EFTextFragment, Fragment, toEFComponent}
