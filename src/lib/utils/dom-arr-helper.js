@@ -89,9 +89,9 @@ const DOMARR = {
 	},
 	splice({ctx, key, anchor}, ...args) {
 		if (this.length === 0) return this
-		const [idx, length, ...inserts] = args
-		// const copiedArr = ARR.copy(this)
-		const spliced = ARR.splice(this, idx, length)
+		const [idx, , ...inserts] = args
+		if (args.length > 2) args.length = 2
+		const spliced = ARR.splice(this, ...args)
 		inform()
 		for (let i of spliced) i.$umount()
 		if (inserts.length) {
