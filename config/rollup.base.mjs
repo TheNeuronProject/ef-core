@@ -52,15 +52,12 @@ export default {
 			target: 'es2015',
 			sourceMap: !isProduction,
 			minify: isProduction
-			// define: {
-			// 	'process.env.NODE_ENV': `'${process.env.NODE_ENV}'`
-			// }
 		}),
 		replace({
 			preventAssignment: true,
 			values: {
 				'process.env.NODE_ENV': `'${process.env.BUILD_TARGET || 'development'}'`
 			}
-		}),
+		})
 	]
 }
