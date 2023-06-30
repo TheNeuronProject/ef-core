@@ -2,25 +2,10 @@ import chalk from 'chalk'
 
 // Rollup plugins
 import eslint from '@rollup/plugin-eslint'
-import replace from '@rollup/plugin-replace'
 import resolve from '@rollup/plugin-node-resolve'
 import commonjs from '@rollup/plugin-commonjs'
 import esbuild from 'rollup-plugin-esbuild'
 import progress from 'rollup-plugin-progress'
-
-switch (process.env.BUILD_ENV) {
-	case 'DEV': {
-		console.log(chalk.cyan('+--------------=+| DEVELOP BUILD |+=--------------+'))
-		break
-	}
-	case 'CI': {
-		console.log(chalk.green('+--------------=+| CI BUILD |+=--------------+'))
-		break
-	}
-	default: {
-		console.log(chalk.yellow('+--------------=+| NORMAL BUILD |+=--------------+'))
-	}
-}
 
 const isProduction = process.env.NODE_ENV === 'production'
 
@@ -50,14 +35,8 @@ export default {
 		commonjs(),
 		esbuild({
 			target: 'es2015',
-			sourceMap: !isProduction,
+			sourceMap: true,
 			minify: isProduction
-		}),
-		replace({
-			preventAssignment: true,
-			values: {
-				'process.env.NODE_ENV': `'${process.env.BUILD_TARGET || 'development'}'`
-			}
 		})
 	]
 }
