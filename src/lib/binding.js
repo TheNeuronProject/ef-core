@@ -6,7 +6,10 @@ import dbg from './utils/debug.js'
 
 const initDataNode = (ctx, {parentNode, dataNode, handlerNode, subscriberNode, _key}) => {
 	const { state } = ctx
+
+	const applyQueue = () => queue(...handlerNode)
 	let updateInProgress = false
+
 	Object.defineProperty(parentNode, _key, {
 		get() {
 			return dataNode[_key]
@@ -22,7 +25,7 @@ const initDataNode = (ctx, {parentNode, dataNode, handlerNode, subscriberNode, _
 
 			inform()
 
-			queue(...handlerNode)
+			queue(applyQueue)
 
 			if (subscriberNode.length > 0) {
 				try {
@@ -38,6 +41,9 @@ const initDataNode = (ctx, {parentNode, dataNode, handlerNode, subscriberNode, _
 		},
 		enumerable: true
 	})
+
+	// Handle class data
+	if (typeof dataNode[_key] !== 'undefined') queue(applyQueue)
 }
 
 const initBinding = (ctx, {bind}) => {
@@ -60,7 +66,8 @@ const initBinding = (ctx, {bind}) => {
 	if (!keyStatus || !(keyStatus.get || keyStatus.set)) initDataNode(ctx, {parentNode, dataNode, handlerNode, subscriberNode, _key})
 	// Update default value
 	// bind[1] is the default value for this node
-	if (bind.length > 1) parentNode[_key] = bind[1]
+	// Only apply default value when class def doesn't exist
+	if (bind.length > 1 && typeof dataNode[_key] === 'undefined') parentNode[_key] = bind[1]
 
 	return {dataNode, parentNode, handlerNode, subscriberNode, _key}
 }

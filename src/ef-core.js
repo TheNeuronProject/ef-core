@@ -2,7 +2,6 @@
 import {EFBaseComponent, EFNodeWrapper, EFTextFragment, Fragment, toEFComponent} from './lib/renderer.js'
 import {applyMountPoint} from './lib/creator.js'
 import mountOptions from './mount-options.js'
-import createElement from './lib/jsx-create-element.js'
 import mapAttrs from './lib/map-attrs.js'
 import {onNextRender, inform, exec, bundle, isPaused} from './lib/render-queue.js'
 import dbg from './lib/utils/debug.js'
@@ -166,7 +165,6 @@ if (process.env.NODE_ENV !== 'production') {
 export {
 	create,
 	mapAttrs,
-	createElement,
 	EFNodeWrapper,
 	EFTextFragment,
 	Fragment,

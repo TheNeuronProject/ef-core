@@ -26,20 +26,27 @@ const DOMARR = {
 		if (!items.length) return
 		items = items.map(shared.toEFComponent)
 		inform()
-		useFragment((tempFragment, recycleFragment) => {
-			DOM.append(tempFragment, ...items.map(i => i.$mount({parent: ctx.state, key})))
-			useAnchor((tempAnchor, recycleAnchor) => {
-				if (this.length === 0) DOM.after(anchor, tempAnchor)
-				else DOM.after(this[this.length - 1].$ctx.nodeInfo.placeholder, tempAnchor)
-				queueDom(() => {
-					DOM.after(tempAnchor, tempFragment)
-					recycleAnchor()
-					recycleFragment()
+		if (items.length === 1) {
+			const placeholder = items[0].$mount({parent: ctx.state, key})
+			if (this.length === 0) DOM.after(anchor, placeholder)
+			else DOM.after(this[this.length - 1].$ctx.nodeInfo.placeholder, placeholder)
+		} else {
+			useFragment((tempFragment, recycleFragment) => {
+				DOM.append(tempFragment, ...items.map(i => i.$mount({parent: ctx.state, key})))
+				useAnchor((tempAnchor, recycleAnchor) => {
+					if (this.length === 0) DOM.after(anchor, tempAnchor)
+					else DOM.after(this[this.length - 1].$ctx.nodeInfo.placeholder, tempAnchor)
+					queueDom(() => {
+						DOM.after(tempAnchor, tempFragment)
+						recycleAnchor()
+						recycleFragment()
+					})
 				})
 			})
-		})
+		}
+		const ret = ARR.push(this, ...items)
 		exec()
-		return ARR.push(this, ...items)
+		return ret
 	},
 	remove(item) {
 		if (this.indexOf(item) === -1) return
@@ -82,13 +89,18 @@ const DOMARR = {
 	},
 	splice({ctx, key, anchor}, ...args) {
 		if (this.length === 0) return this
-		const [idx, length, ...inserts] = args
-		// const copiedArr = ARR.copy(this)
-		const spliced = ARR.splice(this, idx, length)
+		const [idx, , ...inserts] = args
+		if (args.length > 2) args.length = 2
+		const spliced = ARR.splice(this, ...args)
 		inform()
 		for (let i of spliced) i.$umount()
 		if (inserts.length) {
-			if (inserts.length > 1) {
+			if (inserts.length === 1) {
+				const item = shared.toEFComponent(inserts[0])
+				item.$mount({parent: ctx.state, key})
+				if (idx > 0 && this[idx - 1]) DOM.after(this[idx - 1].$ctx.nodeInfo.placeholder, item.$ctx.nodeInfo.placeholder)
+				ARR.splice(this, idx, 0, item)
+			} else {
 				useAnchor((tempAnchor, recycleAnchor) => {
 					if (idx > 0 && this[idx - 1]) DOM.after(this[idx - 1].$ctx.nodeInfo.placeholder, tempAnchor)
 					else DOM.after(anchor, tempAnchor)
@@ -104,11 +116,6 @@ const DOMARR = {
 						})
 					})
 				})
-			} else {
-				const item = shared.toEFComponent(inserts[0])
-				item.$mount({parent: ctx.state, key})
-				if (idx > 0 && this[idx - 1]) DOM.after(this[idx - 1].$ctx.nodeInfo.placeholder, item.$ctx.nodeInfo.placeholder)
-				ARR.splice(this, idx, 0, item)
 			}
 		}
 		exec()
@@ -121,8 +128,9 @@ const DOMARR = {
 		inform()
 		queueDom(() => DOM.after(anchor, ...elements))
 		for (let i of items) ARR.push(elements, i.$mount({parent: ctx.state, key}))
+		const ret = ARR.unshift(this, ...items)
 		exec()
-		return ARR.unshift(this, ...items)
+		return ret
 	}
 }
 

@@ -44,7 +44,7 @@ const ARR = {
 		return proto.sort.call(arr, fn)
 	},
 	splice(arr, ...args) {
-		return proto.splice.apply(arr, args)
+		return proto.splice.call(arr, ...args)
 	},
 	unshift(arr, ...items) {
 		return proto.unshift.apply(arr, items)
