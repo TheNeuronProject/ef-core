@@ -22,20 +22,18 @@ const DOMARR = {
 		poped.$umount()
 		return poped
 	},
-	push({ctx, key, anchor}, ...items) {
+	push({ctx, key, aftAnchor}, ...items) {
 		if (!items.length) return
 		items = items.map(shared.toEFComponent)
 		inform()
 		if (items.length === 1) {
 			const placeholder = items[0].$mount({parent: ctx.state, key})
-			if (this.length === 0) DOM.after(anchor, placeholder)
-			else DOM.after(this[this.length - 1].$ctx.nodeInfo.placeholder, placeholder)
+			DOM.before(aftAnchor, placeholder)
 		} else {
 			useFragment((tempFragment, recycleFragment) => {
 				DOM.append(tempFragment, ...items.map(i => i.$mount({parent: ctx.state, key})))
 				useAnchor((tempAnchor, recycleAnchor) => {
-					if (this.length === 0) DOM.after(anchor, tempAnchor)
-					else DOM.after(this[this.length - 1].$ctx.nodeInfo.placeholder, tempAnchor)
+					DOM.before(aftAnchor, tempAnchor)
 					queueDom(() => {
 						DOM.after(tempAnchor, tempFragment)
 						recycleAnchor()
@@ -92,22 +90,27 @@ const DOMARR = {
 		const [idx, , ...inserts] = args
 		if (args.length > 2) args.length = 2
 		const spliced = ARR.splice(this, ...args)
+		let insertIdx = idx
+		if (insertIdx < 0) insertIdx = this.length + idx
+		if (insertIdx < 0) insertIdx = 0
 		inform()
 		for (let i of spliced) i.$umount()
 		if (inserts.length) {
 			if (inserts.length === 1) {
 				const item = shared.toEFComponent(inserts[0])
 				item.$mount({parent: ctx.state, key})
-				if (idx > 0 && this[idx - 1]) DOM.after(this[idx - 1].$ctx.nodeInfo.placeholder, item.$ctx.nodeInfo.placeholder)
-				ARR.splice(this, idx, 0, item)
+				const placeholder = item.$ctx.nodeInfo.placeholder
+				if (this[insertIdx]) DOM.before(this[insertIdx].$ctx.nodeInfo.firstElement, placeholder)
+				else DOM.after(anchor, placeholder)
+				ARR.splice(this, insertIdx, 0, item)
 			} else {
 				useAnchor((tempAnchor, recycleAnchor) => {
-					if (idx > 0 && this[idx - 1]) DOM.after(this[idx - 1].$ctx.nodeInfo.placeholder, tempAnchor)
+					if (this[insertIdx]) DOM.before(this[insertIdx].$ctx.nodeInfo.firstElement, tempAnchor)
 					else DOM.after(anchor, tempAnchor)
 					useFragment((fragment, recycleFragment) => {
 						const insertItems = inserts.map(i => shared.toEFComponent(i))
 						DOM.append(fragment, ...insertItems.map(i => i.$mount({parent: ctx.state, key})))
-						ARR.splice(this, idx, 0, ...insertItems)
+						ARR.splice(this, insertIdx, 0, ...insertItems)
 						queueDom(() => {
 							DOM.before(tempAnchor, fragment)
 							DOM.remove(tempAnchor)

@@ -10,7 +10,8 @@ import {hasColon, splitByColon} from './utils/string-ops.js'
 
 const typeValid = obj => ['number', 'boolean', 'string'].indexOf(typeof obj) > -1
 
-const createByTag = ({tagType, tagName, tagContent, attrs, namespace}) => {
+// eslint-disable-next-line max-params
+const createByTag = (tagType, tagName, tagContent, attrs, namespace) => {
 	switch (tagType) {
 		case 'string': {
 			if (tagName === tagContent && attrs && attrs.is && typeof attrs.is === 'string') {
@@ -44,8 +45,9 @@ const createByTag = ({tagType, tagName, tagContent, attrs, namespace}) => {
 	}
 }
 
-const getElement = ({tagType, tagName, tagContent, attrs, ref, refs, namespace}) => {
-	const element = createByTag({tagType, tagName, tagContent, attrs, namespace})
+// eslint-disable-next-line max-params
+const getElement = (tagType, tagName, tagContent, attrs, ref, refs, namespace) => {
+	const element = createByTag(tagType, tagName, tagContent, attrs, namespace)
 	if (ref) Object.defineProperty(refs, ref, {
 		value: element,
 		enumerable: true
@@ -59,7 +61,7 @@ const getVal = (dataNode, key) => {
 	return data
 }
 
-const regTmpl = (ctx, {val, handler}) => {
+const regTmpl = (ctx, val, handler) => {
 	if (ARR.isArray(val)) {
 		const [strs, ...exprs] = val
 
@@ -99,7 +101,8 @@ const regTmpl = (ctx, {val, handler}) => {
 	return () => val
 }
 
-const applyEventListener = ({element, custom, handler, trigger: {l, s, i, p, h, a, c, t, u, e, o, k}}) => {
+// eslint-disable-next-line max-params
+const applyEventListener = (element, custom, handler, {l, s, i, p, h, a, c, t, u, e, o, k}) => {
 
 	/*
 	 *  l: listener                 : string
@@ -189,7 +192,8 @@ const applyEventListener = ({element, custom, handler, trigger: {l, s, i, p, h, 
 	element[addListener](l, eventHandler, eventOptions)
 }
 
-const addValListener = (ctx, {trigger, updateLock, element, lastNode, key, expr, custom}) => {
+// eslint-disable-next-line max-params
+const addValListener = (ctx, trigger, updateLock, element, lastNode, key, expr, custom) => {
 	const addListener = custom && '$on' || 'addEventListener'
 	const {parentNode, _key} = initBinding(ctx, {bind: expr})
 
@@ -206,7 +210,7 @@ const addValListener = (ctx, {trigger, updateLock, element, lastNode, key, expr,
 	}
 
 	if (trigger) {
-		applyEventListener({element, custom, handler, trigger})
+		applyEventListener(element, custom, handler, trigger)
 	} else if (key === 'value') {
 		// Listen to input, keyup and change events in order to work in most browsers.
 		element[addListener]('input', handler, eventOptions)
@@ -268,7 +272,8 @@ const getAttrHandler = (ctx, {element, key, custom}) => {
 	}
 }
 
-const addAttr = (ctx, {element, attr, key, custom}) => {
+// eslint-disable-next-line max-params
+const addAttr = (ctx, element, attr, key, custom) => {
 	if (typeValid(attr)) {
 		if (custom) {
 			if (attr === '') {
@@ -293,10 +298,11 @@ const addAttr = (ctx, {element, attr, key, custom}) => {
 	}
 
 	const handler = getAttrHandler(ctx, {element, key, custom})
-	regTmpl(ctx, {val: attr, handler})
+	regTmpl(ctx, attr, handler)
 }
 
-const addProp = (ctx, {element, propPath, value, trigger, updateOnly, custom}) => {
+// eslint-disable-next-line max-params
+const addProp = (ctx, element, value, propPath, trigger, updateOnly, custom) => {
 	const keyPath = ARR.copy(propPath)
 	const lastKey = keyPath.pop()
 	if (custom) keyPath.unshift('$data')
@@ -319,27 +325,28 @@ const addProp = (ctx, {element, propPath, value, trigger, updateOnly, custom}) =
 			}
 		}
 
-		regTmpl(ctx, {val: value, handler})
+		regTmpl(ctx, value, handler)
 		if (
 			trigger ||
 			(propPath.length === 1 && (lastKey === 'value' || lastKey === 'checked')) &&
 			!value[0]
 		) {
-			addValListener(ctx, {trigger, updateLock, element, lastNode, key: lastKey, expr: value[1], custom})
+			addValListener(ctx, trigger, updateLock, element, lastNode, lastKey, value[1], custom)
 		}
 	}
 }
 
 const rawHandler = val => val
 
-const addEvent = (ctx, {element, trigger, custom}) => {
+// eslint-disable-next-line max-params
+const addEvent = (ctx, element, trigger, custom) => {
 
 	/*
 	 *  m: method                   : string
 	 *  v: value                    : string/array/undefined
 	 */
 	const {m, v} = trigger
-	const _handler = regTmpl(ctx, {val: v, ctx, handler: rawHandler})
+	const _handler = regTmpl(ctx, v, rawHandler)
 
 	const callEventHandler = (event) => {
 		const value = _handler()
@@ -351,10 +358,11 @@ const addEvent = (ctx, {element, trigger, custom}) => {
 		}
 	}
 
-	applyEventListener({element, custom, handler: callEventHandler, trigger})
+	applyEventListener(element, custom, callEventHandler, trigger)
 }
 
-const createElement = (ctx, {info, namespace, fragment, custom}) => {
+// eslint-disable-next-line max-params
+const createElement = (ctx, info, namespace, fragment, custom) => {
 	if (fragment) return [new EFFragment(), 'fragment']
 
 	/*
@@ -368,10 +376,10 @@ const createElement = (ctx, {info, namespace, fragment, custom}) => {
 	const tagName = t
 	const tagContent = ctx.scope[t] || t
 	const tagType = typeof tagContent
-	const element = getElement({tagType, tagName, tagContent, attrs: a, ref: r, refs: ctx.refs, namespace})
-	if (a) for (let key in a) addAttr(ctx, {element, custom, attr: a[key], key})
-	if (p) for (let [propPath, value, trigger, updateOnly] of p) addProp(ctx, {element, custom, value, propPath, trigger, updateOnly})
-	if (e) for (let trigger of e) addEvent(ctx, {element, custom, trigger})
+	const element = getElement(tagType, tagName, tagContent, a, r, ctx.refs, namespace)
+	if (a) for (let key in a) addAttr(ctx, element, a[key], key, custom)
+	if (p) for (let [propPath, value, trigger, updateOnly] of p) addProp(ctx, element, value, propPath, trigger, updateOnly, custom)
+	if (e) for (let trigger of e) addEvent(ctx, element, trigger, custom)
 
 	return [element, tagType]
 }
