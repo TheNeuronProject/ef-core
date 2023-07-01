@@ -22,7 +22,7 @@ const checkDestroyed = (state) => {
 	if (!state.$ctx) throw new Error('[EF] This component has been destroyed!')
 }
 
-const bindTextNode = (ctx, {apply, node}) => {
+const bindTextNode = (ctx, node, apply) => {
 	// Data binding text node
 	const textNode = DOM.document.createTextNode('')
 	const { dataNode, handlerNode, _key } = initBinding(ctx, {bind: node})
@@ -40,7 +40,7 @@ const bindTextNode = (ctx, {apply, node}) => {
 	apply(textNode)
 }
 
-const updateMountNode = ({ctx, key, value}) => {
+const updateMountNode = (ctx, key, value) => {
 	const {children} = ctx
 	const child = children[key]
 	const {anchor, node} = child
@@ -56,11 +56,11 @@ const updateMountNode = ({ctx, key, value}) => {
 	}
 	// Update stored value
 	child.node = value
-	if (value) value.$mount({target: anchor, parent: ctx.state, option: mountOptions.BEFORE, key})
+	if (value) value.$mount({target: anchor, parent: ctx.state, option: mountOptions.AFTER, key})
 	exec()
 }
 
-const updateMountList = ({ctx, key, value}) => {
+const updateMountList = (ctx, key, value) => {
 	const {children} = ctx
 	const {anchor, node} = children[key]
 	if (ARR.equals(node, value)) return
@@ -68,7 +68,7 @@ const updateMountList = ({ctx, key, value}) => {
 	if (node.length) node.clear()
 	if (value) {
 		value = ARR.copy(value)
-		useFragment((fragment, putBack) => {
+		useFragment((fragment, recycleFragment) => {
 			// Update components
 			for (let item of value) DOM.append(fragment, shared.toEFComponent(item).$mount({parent: ctx.state, key}))
 			// Update stored value
@@ -76,7 +76,7 @@ const updateMountList = ({ctx, key, value}) => {
 			// Append to current component
 			queueDom(() => {
 				DOM.after(anchor, fragment)
-				putBack()
+				recycleFragment()
 			})
 		})
 	}
@@ -89,6 +89,7 @@ const mountPointUpdaters = [
 ]
 
 const applyMountPoint = (type, key, tpl) => {
+	const updater = mountPointUpdaters[type]
 	Object.defineProperty(tpl.prototype, key, {
 		get() {
 			if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
@@ -97,24 +98,26 @@ const applyMountPoint = (type, key, tpl) => {
 		set(value) {
 			if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 			const ctx = this.$ctx
-			mountPointUpdaters[type]({ctx, key, value})
+			updater(ctx, key, value)
 		},
 		enumerable: true
 	})
 }
 
-const bindMountNode = ({ctx, key, anchor}) => {
+const bindMountNode = (ctx, key, anchor) => {
 	const { children } = ctx
 	const info = {anchor}
 	children[key] = info
 	anchor[EFMountPoint] = info
 }
 
-const bindMountList = ({ctx, key, anchor}) => {
+// eslint-disable-next-line max-params
+const bindMountList = (ctx, key, anchor, aftAnchor) => {
 	const { children } = ctx
 	children[key] = {
-		node: defineArr([], {ctx, key, anchor}),
-		anchor
+		node: defineArr([], {ctx, key, anchor, aftAnchor}),
+		anchor,
+		aftAnchor
 	}
 	anchor[EFMountPoint] = children[key]
 }
@@ -137,19 +140,23 @@ const resolveAST = (ctx, {apply, node, nodeType, namespace, create}) => {
 			// Recursive call for child element
 			if (typeOf(node[0]) === 'object') apply(create(ctx, {node, namespace}))
 			// Dynamic text node
-			else bindTextNode(ctx, {apply, node})
+			else bindTextNode(ctx, node, apply)
 			break
 		}
 		// Mount points
 		case 'object': {
-			const anchor = DOM.document.createTextNode('')
-			// Single node mount point
-			if (node.t === 0) bindMountNode({ctx, key: node.n, anchor})
-			// Multi node mount point
-			else bindMountList({ctx, key: node.n, anchor})
-			// Append anchor
 			if (process.env.NODE_ENV !== 'production') apply(DOM.document.createComment(`<MountPoint${node.t && ' type="list" ' || ' '}name="${node.n}">`))
+			const anchor = DOM.document.createTextNode('')
+			// Append anchor
 			apply(anchor)
+			// Single node mount point
+			if (node.t === 0) bindMountNode(ctx, node.n, anchor)
+			else {
+				// Multi node mount point
+				const aftAnchor = DOM.document.createTextNode('')
+				apply(aftAnchor)
+				bindMountList(ctx, node.n, anchor, aftAnchor)
+			}
 			if (process.env.NODE_ENV !== 'production') apply(DOM.document.createComment('</MountPoint>'))
 			break
 		}
@@ -211,7 +218,7 @@ const create = (ctx, {node, namespace}) => {
 	if (namespace === htmlNS) namespace = ''
 
 	// First create an element according to the description
-	const [element, type] = createElement(ctx, {info, namespace, fragment, custom})
+	const [element, type] = createElement(ctx, info, namespace, fragment, custom)
 
 	let apply = noop
 
