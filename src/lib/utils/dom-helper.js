@@ -60,6 +60,10 @@ const EFFragment = class {
 	remove() {
 		DOM.append(this.$safeZone, ...this.$children)
 	}
+
+	get firstElement() {
+		return this.$children[0] || null
+	}
 }
 
 const appendNode = (node, target) => {
@@ -207,7 +211,8 @@ DOM.append = (parentNode, ...nodes) => {
 	}
 
 	// Handle fragment
-	if (isInstance(parentNode, EFFragment)) parentNode.append(...nodes)
+	// if (isInstance(parentNode, EFFragment)) parentNode.append(...nodes)
+	parentNode.append(...nodes)
 }
 
 DOM.remove = (node) => {

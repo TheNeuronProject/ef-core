@@ -127,8 +127,14 @@ const EFBaseComponent = class {
 		}
 
 		const mount = () => {
-			if (placeholder.parentNode) DOM.before(placeholder, element)
-			else DOM.remove(element)
+			const parentNode = placeholder.parentNode
+			if (mount.remove || !parentNode) {
+				DOM.remove(element)
+				mount.remove = false
+			} else if (parentNode) {
+				DOM.before(placeholder, element)
+				DOM.remove(placeholder)
+			}
 		}
 
 		const ctx = {
@@ -182,7 +188,15 @@ const EFBaseComponent = class {
 
 		element = create(ctx, {node: ast, namespace: ''})
 
+		let firstElement = element
+
+		while (!DOM.isNodeInstance(firstElement)) {
+			if (isInstance(firstElement, EFFragment)) firstElement = firstElement.firstElement
+			else firstElement = firstElement.$ctx.nodeInfo.element
+		}
+
 		nodeInfo.element = element
+		nodeInfo.firstElement = firstElement
 
 		for (let [path, handler] of watchers) {
 			this.$subscribe(path, handler)
@@ -232,7 +246,6 @@ const EFBaseComponent = class {
 		if (process.env.NODE_ENV !== 'production') checkDestroyed(this)
 		const { nodeInfo, mount, beforeMount, afterMount } = this.$ctx
 
-
 		let ret = null
 
 		if (typeof target === 'string') {
@@ -252,32 +265,35 @@ const EFBaseComponent = class {
 		if (!key) key = '__DIRECTMOUNT__'
 		nodeInfo.parent = parent
 		nodeInfo.key = key
+		mount.remove = false
 		queueDom(mount)
+
+		const placeholder = nodeInfo.placeholder
 
 		if (target) {
 			switch (option) {
 				case mountOptions.BEFORE: {
-					DOM.before(target, nodeInfo.placeholder)
+					DOM.before(target, placeholder)
 					break
 				}
 				case mountOptions.AFTER: {
-					DOM.after(target, nodeInfo.placeholder)
+					DOM.after(target, placeholder)
 					break
 				}
 				case mountOptions.REPLACE: {
-					DOM.before(target, nodeInfo.placeholder)
+					DOM.before(target, placeholder)
 					DOM.remove(target)
 					break
 				}
 				case mountOptions.APPEND:
 				default: {
-					DOM.append(target, nodeInfo.placeholder)
+					DOM.append(target, placeholder)
 				}
 			}
 			ret = exec()
 		} else {
 			exec()
-			ret = nodeInfo.placeholder
+			ret = placeholder
 		}
 
 		if (afterMount) afterMount()
@@ -310,7 +326,7 @@ const EFBaseComponent = class {
 			} else if (isInstance(parent, EFFragment)) parent.$ctx.nodeInfo.element.removeChild(nodeInfo.element)
 		}
 
-		DOM.remove(nodeInfo.placeholder)
+		mount.remove = true
 		queueDom(mount)
 
 		const ret = exec()
