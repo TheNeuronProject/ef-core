@@ -107,7 +107,7 @@ const create = (ast, name) => {
 	return EFComponent
 }
 
-let coreVersion = '0.17.3'
+let coreVersion = '0.17.4'
 
 if (process.env.NODE_ENV !== 'production') {
 	coreVersion = `${coreVersion}+debug`
