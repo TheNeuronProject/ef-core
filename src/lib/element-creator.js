@@ -351,7 +351,7 @@ const addEvent = (ctx, element, trigger, custom) => {
 	const callEventHandler = (event) => {
 		const value = _handler()
 		if (ctx.methods[m]) ctx.methods[m]({e: event, event, value, state: ctx.state})
-		else {
+		else if (m) {
 			if (process.env.NODE_ENV !== 'production') dbg.warn(`Bubbling up event '${m}'...`)
 			event.data = value
 			ctx.state.$emit(m, event)
