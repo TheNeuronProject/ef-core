@@ -107,7 +107,7 @@ const create = (ast, name) => {
 	return EFComponent
 }
 
-let coreVersion = '0.17.4'
+let coreVersion = '0.17.5'
 
 if (process.env.NODE_ENV !== 'production') {
 	coreVersion = `${coreVersion}+debug`
@@ -165,6 +165,7 @@ if (process.env.NODE_ENV !== 'production') {
 export {
 	create,
 	mapAttrs,
+	EFBaseComponent,
 	EFNodeWrapper,
 	EFTextFragment,
 	Fragment,
