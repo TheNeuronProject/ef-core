@@ -43,7 +43,7 @@ const initDataNode = (ctx, {parentNode, dataNode, handlerNode, subscriberNode, _
 	})
 
 	// Handle class data
-	if (typeof dataNode[_key] !== 'undefined') queue(applyQueue)
+	queue(applyQueue)
 }
 
 const initBinding = (ctx, {bind}) => {
